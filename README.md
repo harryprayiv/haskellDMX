@@ -18,7 +18,7 @@ Expirimental & Professional Grade DMX Microcontroller
 
    IN THE WORKS:
   - interpolation algorithms using the easing library
-  - Pokconsole Mini (faders are replaced by knobs)
+  - Pockonsole Mini (faders are replaced by knobs)
   - DMX timing variables and state machine
 
 0.1.0 - Slowly implementing Easing first with display then with DMX (very early stages)
