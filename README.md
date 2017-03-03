@@ -2,7 +2,7 @@
   //                                                          //
   //                  Pockonsolve - Version 0.1.0             //
   //                                                          //
-  // Expirimental & Professional Grade DMX Microcontroller    //
+  //   Expirimental & Professional Grade DMX Microcontroller    //
   //////////////////////////////////////////////////////////////
 
 /*  LIBRARIES USED:
