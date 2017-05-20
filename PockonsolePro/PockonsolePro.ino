@@ -37,7 +37,7 @@
   Digital Pins: D10,D12,D25,D25,D27,D28,D29,D30 (D2-D9 used in keypad)
   Analog Pins: D31/A12,D35/A16,D36/A17,D37/A18,D38/A19,D39/A20
   3V3 Rail
-  Ground Rail (future iterations: switch for decoupling cap)
+  Ground Rail (future iterations: switchable decoupling caps on each input to gnd)
  ***********************************************************************/
 
 #include <Arduino.h> /*Arduino Includes*/
