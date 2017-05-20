@@ -2,7 +2,7 @@ Pockonsolve - Version 0.1.0
 
 Expirimental & Professional Grade DMX Microcontroller 
 
-/*  LIBRARIES USED:
+LIBRARIES USED:
   - TeensyDmx Library
   - U8G2 Library
   - Keypad Library
@@ -10,7 +10,7 @@ Expirimental & Professional Grade DMX Microcontroller
   
 
 
-/*  FEATURES:
+FEATURES:
   - 8 or 16-bit DMX Support 
   - 12 Key keypad parsing (1, 2, 3, 4, 5, 6, 7, 8, 9, 0, And, Minus, S, @, Enter, Thru) 
   - momentary, latch or instantaneous buttons
