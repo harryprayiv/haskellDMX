@@ -3,7 +3,7 @@
  **********************************************************************
  Board: VoV1366v0.8
  Designed by Volt-Vision
- 
+
  Code:
  ______________________________
  DMX Connections (hardware UART @ Serial1) to TI SN75LBC184D:
@@ -66,7 +66,7 @@ TeensyDmx Dmx(Serial1, DMX_REDE);
 
 /*DMX Values__________________________________________________________*/
 const long analogFaders = 9;            //there will always be the same number of pots (9)
-const int analogFaderMap[analogFaders] = {1, 2, 3, 4, 5, 6, 7, 8, 9}; // this is to allow complex pin assignments
+const int analogFaderMap[analogFaders] = {1, 2, 3, 4, 5, 6, 7, 8, 9}; // this is to allow reconfigurable complex pin assignments
 long dmxChannels = 512;           // intializing with a limiting to the number of values that can take up a DMX instruction
 
 byte dmxVal[512];           // currently limiting to one universe, though that won't always be the case
@@ -158,7 +158,7 @@ enum animState {
 };
 animState playBackState = OFF;        // initialize to off to prevent empty animations from playing
 
-float playBackDuration = 30.0         // 30 seconds 
+float playBackDuration = 30.0         // 30 seconds
 float playBackSpeed = 1.0             //multiplier for speed
 byte keyFrames[512] = {0};             // storage for DMX keyframe values in the animation
 
@@ -219,26 +219,26 @@ void setup() {
 void loop() {
        char key = keypad.getKey();
        if (modeChosen == false){
-    
+
             if (key != NO_KEY) {
                 kpdToCommand(key);
-    
+
             }
         }else {
         switch (controlMode) {
                case FADER_MODE:
                    u8g2.clearBuffer();
                    fadersToDmxWscaler(16,9);
-    
-    
+
+
                    break;
-    
+
                case KPD_MODE:
                    if (key != NO_KEY) {
                       kpdToCommand(key);
                     }
                     break;
-    
+
                 case KPDFADER_MODE:
                     if (key != NO_KEY) {
                         kpdToCommand(key);
@@ -257,11 +257,11 @@ void loop() {
 
 /*//a simple display for keys being entered
  void modeMenuDisplay(String charinput) {
- 
+
  switch (display) {
  //POCKONSOLED______________________________________
  case POCKONSOLED:
- 
+
  delay(1000);
  u8g2.clearBuffer();
  break;
@@ -270,7 +270,7 @@ void loop() {
  Serial.println(charinput);
  break;
  }
- 
+
  }*/
 
 
@@ -481,7 +481,7 @@ void keypadLogic(bool isAnInteger, char kpdInput) {
                 intCount++;
                 break;                                          // leave the switch
             }
-            
+
             //___DMX_INTENSITY____________________________________
         case DMX_INTENSITY:                  // Intensity Assignment Part of the Function
             if (isAnInteger == false) {
@@ -875,7 +875,7 @@ void interpolateDMXVals(int chOne, selectionMode selType, int chTwo, float trans
     double change = (transEndIntensity - transStartIntensity);
     double subdivisions = round((change / duration));
     double easedPosition;
-    
+
     switch (transType) {
             //BACK_EASE______________________________________
         case BACK_EASE:
@@ -1053,18 +1053,18 @@ void interpolateDMXVals(int chOne, selectionMode selType, int chTwo, float trans
 /* CURRENTLY BROKEN  ***************************************************/
 // experimental function for displaying an array DMX submaster levels on screen simultaneously
 void drawValues (int valArray[], int faderQuant){
-    
+
     int faderWidth = (128/faderQuant;
     int spaceBetweenCells = (128 - (faderWidth * faderQuant)/faderQuant);
 
 //    u8g2.clearBuffer();
-    
+
     for (int i = size; i <= faderQuant; i++) {
         //((i * 7) + 1) and (((i * 7) +1 ) + 4)
         u8g2.drawBox(((i * 7) + 1), valArray[i], (((i * 7) +1 ) + faderWidth), 65);
     }
     delay(2);
-    
+
 //    u8g2.sendBuffer();
 }
 
@@ -1101,7 +1101,7 @@ void drawInterpolation() {
     }
     smpleDisplayWCursor("Quadratic", 1, 20, false, true);
     delay(60);
-    
+
     duration = 124;
     currentTime = 62;
     easedPosition = 62;
@@ -1117,7 +1117,7 @@ void drawInterpolation() {
     }
     smpleDisplayWCursor("Cubic", 1, 20, false, true);
     delay(60);
-    
+
     duration = 124;
     currentTime = 62;
     easedPosition = 62;
@@ -1134,7 +1134,7 @@ void drawInterpolation() {
     }
     smpleDisplayWCursor("Quartic", 1, 20, false, true);
     delay(60);
-    
+
     duration = 124;
     currentTime = 62;
     easedPosition = 62;
@@ -1151,7 +1151,7 @@ void drawInterpolation() {
     }
     smpleDisplayWCursor("Sine", 1, 20, false, true);
     delay(60);
-    
+
     duration = 124;
     currentTime = 62;
     easedPosition = 62;
@@ -1168,7 +1168,7 @@ void drawInterpolation() {
     }
     smpleDisplayWCursor("Quintic", 1, 20, false, true);
     delay(60);
-    
+
     duration = 124;
     currentTime = 62;
     easedPosition = 62;
@@ -1185,7 +1185,7 @@ void drawInterpolation() {
     }
     smpleDisplayWCursor("Exponential", 1, 20, false, true);
     delay(60);
-    
+
     duration = 124;
     currentTime = 62;
     easedPosition = 52;
@@ -1202,7 +1202,7 @@ void drawInterpolation() {
     }
     smpleDisplayWCursor("Back", 1, 20, false, true);
     delay(60);
-    
+
     duration = 124;
     currentTime = 62;
     easedPosition = 62;
@@ -1219,7 +1219,7 @@ void drawInterpolation() {
     }
     smpleDisplayWCursor("Bounce", 1, 20, false, true);
     delay(60);
-    
+
     duration = 124;
     currentTime = 62;
     easedPosition = 52;
@@ -1236,7 +1236,7 @@ void drawInterpolation() {
     }
     smpleDisplayWCursor("Elastic", 1, 20, false, true);
     delay(60);
-    
+
     duration = 124;
     currentTime = 62;
     easedPosition = 52;
@@ -1262,37 +1262,37 @@ void compareInterpolations(double duration) {
     double change = 62;
     //  double subdivisions = round((change / duration));
     double easedPosition[9] = {0,0,0,0,0,0,0,0,0};
-    
+
     linear.setDuration(duration);       /*Linear*/
     linear.setTotalChangeInPosition(change);
-    
+
     quadratic.setDuration(duration);        /*Quadratic*/
     quadratic.setTotalChangeInPosition(change);
-    
+
     quartic.setDuration(duration);        /*Quartic*/
     quartic.setTotalChangeInPosition(change);
-    
+
     quintic.setDuration(duration);        /*Quintic*/
     quintic.setTotalChangeInPosition(change);
-    
+
     exponential.setDuration(duration);        /*Exponential*/
     exponential.setTotalChangeInPosition(change);
-    
+
     cubic.setDuration(duration);        /*Cubic*/
     cubic.setTotalChangeInPosition(change);
-    
+
     sine.setDuration(duration);       /*Sine*/
     sine.setTotalChangeInPosition(change);
-    
+
     bounce.setDuration(duration);       /*Bounce*/
     bounce.setTotalChangeInPosition(change);
-    
+
     circular.setDuration(duration);       /*Circular*/
     circular.setTotalChangeInPosition(change);
-    
+
     elastic.setDuration(duration);        /*Elastic*/
     elastic.setTotalChangeInPosition(change);
-    
+
     for (int i = 0; i <= duration; i++) { // an attempt to get all of the interpolation algorithms firing at the same time
         easedPosition[0] = linear.easeIn(currentTime);
         easedPosition[1] = quadratic.easeIn(currentTime);
@@ -1308,7 +1308,7 @@ void compareInterpolations(double duration) {
             int k = ((j + 1) * j);
             int h = (k * 7);
             vertSquareAnimate(j, (60-(easedPosition[j])), h, false, false);
-            
+
         }
         currentTime ++;
     }
@@ -1350,48 +1350,48 @@ void fadersToDmxWscaler(int bitRate, int masterFader) {
         u8g2.drawStr(50, 60, "G");
         u8g2.drawStr(72, 60, "H");
         u8g2.drawStr(94, 41, "All");
-        
+
         u8g2.setFont(u8g2_font_5x8_mn);  // choose a suitable font
         u8g2.setCursor(0, 10);
         u8g2.print(dmxVal[8]);
-        
+
         u8g2.setCursor(22, 10);
         u8g2.print(dmxVal[9]);
-        
+
         u8g2.setCursor(44, 10);
         u8g2.print(dmxVal[10]);
-        
+
         u8g2.setCursor(66, 10);
         u8g2.print(dmxVal[11]);
-        
+
         u8g2.setCursor(0, 47);
         u8g2.print(dmxVal[12]);
-        
+
         u8g2.setCursor(22, 47);
         u8g2.print(dmxVal[13]);
-        
+
         u8g2.setCursor(44, 47);
         u8g2.print(dmxVal[14]);
-        
+
         u8g2.setCursor(66, 47);
         u8g2.print(dmxVal[15]);
-        
+
         u8g2.setCursor(93, 30);
         u8g2.print(scalerVal * 100);
-        
+
         u8g2.drawLine(17, 0, 17, 64);
         u8g2.drawLine(39, 0, 39, 64);
         u8g2.drawLine(61, 0, 61, 64);
         u8g2.drawLine(83, 0, 83, 64);
         u8g2.drawLine(0, 30, 83, 30);
         u8g2.drawFrame(87, 21, 94, 24);
-        
+
     } else {
         scalerVal = (floatmap(analogRead(masterFader), 1, 65536, 65025, 1) / 65025);   // Master Fader________________________________
         if (scalerVal <= .01) {                  // eliminate small values to avoid flickering (I may eventually do smoothing instead)
             scalerVal = 0;
         };
-        
+
         for (int i = 0; i < (analogFaders - 1); ++i) {
             dmxVal[i] = round(floatmap(analogRead(i + 1), 1, 65536, 255, 1) * scalerVal);
             if (dmxVal[i] < 2) {                  // eliminate small values to avoid flickering (I may eventually do smoothing instead)
@@ -1402,31 +1402,31 @@ void fadersToDmxWscaler(int bitRate, int masterFader) {
         u8g2.setFont(u8g2_font_5x8_mn);  // choose a suitable font
         u8g2.setCursor(0, 10);
         u8g2.print(dmxVal[0]);
-        
+
         u8g2.setCursor(22, 10);
         u8g2.print(dmxVal[1]);
-        
+
         u8g2.setCursor(44, 10);
         u8g2.print(dmxVal[2]);
-        
+
         u8g2.setCursor(66, 10);
         u8g2.print(dmxVal[3]);
-        
+
         u8g2.setCursor(0, 47);
         u8g2.print(dmxVal[4]);
-        
+
         u8g2.setCursor(22, 47);
         u8g2.print(dmxVal[5]);
-        
+
         u8g2.setCursor(44, 47);
         u8g2.print(dmxVal[6]);
-        
+
         u8g2.setCursor(66, 47);
         u8g2.print(dmxVal[7]);
-        
+
         u8g2.setCursor(93, 30);
         u8g2.print(scalerVal * 100);
-        
+
         u8g2.setFont(u8g2_font_profont15_tf);  // choose a suitable font
         u8g2.drawStr(2, 24, "1");
         u8g2.drawStr(26, 24, "2");
@@ -1437,7 +1437,7 @@ void fadersToDmxWscaler(int bitRate, int masterFader) {
         u8g2.drawStr(50, 60, "7");
         u8g2.drawStr(72, 60, "8");
         u8g2.drawStr(94, 41, "All");
-        
+
         u8g2.drawLine(17, 0, 17, 64);
         u8g2.drawLine(39, 0, 39, 64);
         u8g2.drawLine(61, 0, 61, 64);
@@ -1455,7 +1455,7 @@ void introPage(displayMode dispmode) {
             delay(100);
             u8g2.setFontMode(1);  /* activate transparent font mode */
             u8g2.setDrawColor(1); /* color 1 for the box */
-            
+
             u8g2.drawBox(0, 2, 128, 50);
             u8g2.setFont(u8g2_font_7x13_tf);
             u8g2.setDrawColor(0);
