@@ -1,21 +1,24 @@
-#<b>Pockonsolve - Version 0.1.1</b>
+\#<b>Pockonsolve - Version 0.1.1</b>
 
-<i>Expirimental & Professional Grade DMX Microcontroller</i>
+<i>Expirimental DMX Microcontroller</i>
 
-##LIBRARIES USED:
+LIBRARIES USED:
+
 -   TeensyDmx Library
 -   U8G2 Library
 -   Keypad Library
 -   EasingLibrary
 
-##FEATURES:
+FEATURES:
+
 -   8 or 16-bit DMX Support
 -   string input support
 -   12 Key keypad parsing (1, 2, 3, 4, 5, 6, 7, 8, 9, 0, And, Minus, S, @, Enter, Thru)
 -   momentary, latch or instantaneous buttons
 -   Stable analog to DMX conversion for potentiometers and other sensors
 
-##IN THE WORKS:
+IN THE WORKS:
+
 -   interpolation algorithms using the easing library
 -   Pockonsole Mini (faders are replaced by knobs)
 -   DMX timing variables and state machine

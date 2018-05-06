@@ -1,239 +1,288 @@
-/* TeensyDmx - DMX Sender/Receiver with RDM for Teensy 3.2
-   Copyright (c) 2017-2018 Peter Newman, Dan Large, http://daniellarge.co.uk
-   Copyright (c) 2017 Chris Staite
-   Copyright (c) 2014 Jim Paris
-   Copyright (c) 2014 Ward
-   Copyright (c) 2008-2009 Peter Knight, Tinker.it! All rights reserved.
-   Copyright (c) 2011-2013 by Matthias Hertel, http://www.mathertel.de
-
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
-
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
-*/
-
-#ifndef _TEENSYDMX_H
-#define _TEENSYDMX_H
-
-#include "Arduino.h"
-
-enum { DMX_BUFFER_SIZE = 512 };
-enum { RDM_UID_LENGTH = 6 };
-enum { RDM_MAX_STRING_LENGTH = 32 };
-enum { RDM_MAX_PARAMETER_DATA_LENGTH = 231 };
-enum { RDM_ROOT_DEVICE = 0 };
-
-struct RdmData
-{
-  byte     startCode;    // Start Code 0xCC for RDM
-  byte     subStartCode; // Sub Start Code 0x01 for RDM
-  byte     length;       // packet length
-  byte     destId[RDM_UID_LENGTH];
-  byte     sourceId[RDM_UID_LENGTH];
-
-  byte     transNo;     // transaction number, not checked
-  byte     responseType;    // ResponseType or PortID
-  byte     messageCount;     // number of queued messages
-  uint16_t subDev;      // sub device number (root = 0)
-  byte     cmdClass;     // command class
-  uint16_t parameter;	   // parameter ID
-  byte     dataLength;   // parameter data length in bytes
-  byte     data[RDM_MAX_PARAMETER_DATA_LENGTH];   // data byte field
-} __attribute__((__packed__)); // struct RdmData
-static_assert((sizeof(RdmData) == 255),
-              "Invalid size for RdmData struct, is it packed?");
-
-struct RdmInit
-{
-    const byte *uid;
-    const uint32_t softwareVersionId;
-    const char *softwareLabel;
-    const char *manufacturerLabel;
-    const uint16_t deviceModelId;
-    const char *deviceModel;
-    const uint16_t productCategory;
-    uint16_t footprint;
-    uint16_t startAddress;
-    const uint16_t additionalCommandsLength;
-    const uint16_t *additionalCommands;
-};
-
-class TeensyDmx
-{
-  public:
-    enum Mode { DMX_OFF, DMX_IN, DMX_OUT };
-
-    TeensyDmx(HardwareSerial& uart, struct RdmInit* rdm, uint8_t redePin);
-
-    TeensyDmx(HardwareSerial& uart, struct RdmInit* rdm);
-
-    TeensyDmx(HardwareSerial& uart, uint8_t redePin) :
-        TeensyDmx(uart, nullptr, redePin)
-    { }
-
-    TeensyDmx(HardwareSerial& uart) :
-        TeensyDmx(uart, nullptr)
-    { }
-
-    void setMode(TeensyDmx::Mode mode);
-    void loop();
-
-    // Returns true if a new frame has been received since the this was last called
-    bool newFrame();
-    // Get the buffer with the current channel data in
-    const volatile uint8_t* getBuffer() const;
-    // Use for receive with addresses from 0-511
-    uint8_t getChannel(const uint16_t address);
-    // Use for receive with addresses from 1-512
-    uint8_t getDmxChannel(const uint16_t address)
-    {
-        return getChannel(address - 1);
+void stringToCommand(char text) {
+    switch (text) {
+            //___________________________________________________________________________________________________
+        case '@':                       //  fall through switch for the '@' key with function trigger
+        case 'T':                       //  fall through switch for the 'T' (through) key with function trigger
+        case '&':                       //  fall through switch for the '&' key with function trigger
+        case '-':                       //  fall through switch for the '-' key with function trigger
+        case 'E':                       //  fall through switch for the 'E' key with function trigger
+        case 'S':                       //  mapping for 'S' key with function trigger
+            stringLogic(false, text);
+            break;
+        case '0':                       //  fall through switch for the '0' key with function trigger
+        case '1':                       //  fall through switch for the '1' key with function trigger
+        case '2':                       //  fall through switch for the '2' key with function trigger
+        case '3':                       //  fall through switch for the '3' key with function trigger
+        case '4':                       //  fall through switch for the '4' key with function trigger
+        case '5':                       //  fall through switch for the '5' key with function trigger
+        case '6':                       //  fall through switch for the '6' key with function trigger
+        case '7':                       //  fall through switch for the '7' key with function trigger
+        case '8':                       //  fall through switch for the '8' key with function trigger
+        case '9':                       //  mapping for '9' key with function trigger
+            keypadLogic(true, key);
+            break;
     }
-    // Returns true if RDM has changed since this was last called
-    bool rdmChanged();
-    // Returns true if the device should be in identify mode
-    bool isIdentify() const;
-    // Returns the user-set label of the device
-    // This will always be null terminated, therefore can be up to 33 chars
-    const char* getLabel() const;
+}
 
-    // Return the comms status error counters
-    const volatile uint16_t getShortMessage() const;
-    const volatile uint16_t getChecksumFail() const;
-    const volatile uint16_t getLengthMismatch() const;
 
-    // Use for transmit with addresses from 0-511
-    // Will keep all other values as they were previously
-    void setChannel(const uint16_t address, const uint8_t value);
-    // Use for transmit with addresses from 1-512
-    // Will keep all other values as they were previously
-    void setDmxChannel(const uint16_t address, const uint8_t value)
-    {
-        setChannel(address - 1, value);
+
+void stringLogic(bool isAnInteger, char kpdInput) {
+    switch (kpdState) {
+            //MODE_SELECT______________________________________
+        case MODE_SELECT:
+            if ((isAnInteger == false) && (pgmModeSelectionInt > 0)) {
+                if (kpdInput == 'E') {
+                    if (pgmModeSelectionInt == 1) {
+                        smpleDisplay("Fader Mode", true, true);
+                        controlMode = FADER_MODE;
+                        kpdState = NO_CMD;
+                        modeChosen = true;
+                        break;
+                    } if (pgmModeSelectionInt == 2) {
+                        smpleDisplay("Keypad Mode", true, true);
+                        controlMode = KPD_MODE;
+                        kpdState = NO_CMD;
+                        modeChosen = true;
+                        break;
+                    } if (pgmModeSelectionInt == 3) {
+                        smpleDisplay("Keypad Fader Mode", true, true);
+                        controlMode = KPDFADER_MODE;
+                        kpdState = NO_CMD;
+                        modeChosen = true;
+                        break;
+                    }  if (pgmModeSelectionInt == 4) {
+                        smpleDisplay("Animation Mode", true, true);
+                        controlMode = ANIMATION_MODE;
+                        kpdState = NO_CMD;
+                        modeChosen = true;
+                        break;
+                    }
+                    kpdState = MODE_SELECT; // any non-integer than "Enter" won't work here
+                    break;
+                }
+                kpdState = MODE_SELECT;
+                break;
+            } else {
+                if (kpdInput == '1') {      //if 1 is entered
+                    pgmModeSelectionInt = 1;
+                    smpleDisplay(pgmModeSelectionInt, true, true);
+                    kpdState = MODE_SELECT;
+                    break;
+                } if (kpdInput == '2') {     //if 2 is entered
+                    pgmModeSelectionInt = 2;
+                    smpleDisplay(pgmModeSelectionInt, true, true);
+                    kpdState = MODE_SELECT;
+                    break;
+                } if (kpdInput == '3') {     //if 3 is entered
+                    pgmModeSelectionInt = 3;
+                    smpleDisplay(pgmModeSelectionInt, true, true);
+                    kpdState = MODE_SELECT;
+                    break;
+                } if (kpdInput == '4') {     //if 4 is entered
+                    pgmModeSelectionInt = 4;
+                    smpleDisplay(pgmModeSelectionInt, true, true);
+                    kpdState = MODE_SELECT;
+                    break;
+                } else {
+                    smpleDisplay("Number not allowed", true, true);
+                    kpdState = MODE_SELECT;
+                    break;
+                }
+            }
+            //NO_CMD______________________________________
+        case NO_CMD:
+            if (isAnInteger == false) {
+                kpdState = NO_CMD;
+                break;
+            } else {
+                if (kpdInput == '0') {      //don't count a zero as the first integer in the array
+                    kpdState = NO_CMD;
+                    break;
+                }
+                chOneKpdChar[intCount] = kpdInput;
+                smpleDisplay(chOneKpdChar, true, true);
+                intCount++;
+                kpdState = DMXCH_ONE;
+                break;
+            }
+            //___DMXCH_ONE____________________________________
+        case DMXCH_ONE:                                                     // First Channel Assignment command
+            if (isAnInteger == false) {                                     // is this an integer?
+                /*___________AT__________________________*/
+                if ((kpdInput == '@') && (intCount > 0)) { // if it is '@' and there are more than 0 integers
+                    smpleDisplay(" @ ", true, true);
+                    channelOneInt = atoi (chOneKpdChar);  //parse array into an int
+                    if (channelOneInt > 512) {                    //greater than 512?? (one universe)
+                        channelOneInt = 512;                      // max out channel number to 512
+                    }
+                    selectionType = SINGLECHANNEL;          // classify the command as soon as it is known
+                    kpdState = DMX_INTENSITY;                  // move to the stage where we assign intensity
+                    intCount = 0;      //zero the int Count
+                    break;
+                }
+                /*___________THROUGH__________________________*/
+                if ((kpdInput == 'T') && (intCount > 0)) { // if it is 'T' and there are more than 0 integers
+                    smpleDisplay(" thru ", true, true);
+                    channelOneInt = atoi (chOneKpdChar); //parse array into an int
+                    if (channelOneInt > 512) {            //greater than 512?? (one universe)
+                        channelOneInt = 512;              // max out channel number to 512
+                    }
+                    selectionType = THROUGH;   // enum & select proper bool index
+                    kpdState = DMXCH_TWO;                  // move to the stage where you assign intensity
+                    intCount = 0;      //zero the int Count
+                    break;
+                }
+                /*___________AND__________________________*/
+                if ((kpdInput == '&') && (intCount > 0)) { // if it is '&' and there are more than 0 integers
+                    smpleDisplay(" and ", true, true);
+                    channelOneInt = atoi (chOneKpdChar);    //parse array into an int
+                    if (channelOneInt > 512) {
+                        channelOneInt = 512;
+                    }
+                    selectionType = AND;   // enum & select proper bool index
+                    kpdState = DMXCH_TWO;                  // move to the stage where you assign intensity
+                    intCount = 0;      //parse and zero the int Count
+                    break;
+                }
+                break;
+                /*___________3 INTEGERS__________________________*/
+            } else if (intCount == 2) {                          //more than 2 integer places
+                chOneKpdChar[intCount - 2] = chOneKpdChar[intCount - 1]; //shifting values to next array position
+                chOneKpdChar[intCount - 1] = chOneKpdChar[intCount]; //shifting values to next array position
+                chOneKpdChar[intCount] = kpdInput;   // adding the char to the array
+                smpleDisplay(chOneKpdChar, true, true);
+                kpdState = DMXCH_ONE;                   // keep wrapping digits in this controlModeuntil modifier
+                intCount = 2;
+                break;
+                /*___________< 3 INTEGERS________________________*/
+            } else {                                                 // if we aren't overflowing, do this
+                chOneKpdChar[intCount] = kpdInput;   // adding the char to the array
+                smpleDisplay(chOneKpdChar, true, true);
+                kpdState = DMXCH_ONE;                   // stay in this controlModeuntil modifier is pressed
+                intCount++;
+                break;                                          // leave the switch
+            }
+            //___DMXCH_TWO____________________________________
+        case DMXCH_TWO:                  // Second Channel Assignment command
+            if (isAnInteger == false) {                                     // is this an integer?
+                /*___________AT__________________________*/
+                if ((kpdInput == '@') && (intCount > 0)) { // if input = '@' and > than 0 integers
+                    /*___________AND__________________________*/
+                    if (selectionType == AND) {            // if input = 'AND'
+                        smpleDisplay(" at ", true, true);
+                        channelTwoInt = atoi (chTwoKpdChar);  //parse array into an int
+                        if (channelTwoInt > 512) {            // if input > 512
+                            channelTwoInt = 512;              // make it 512
+                        }
+                        kpdState = DMX_INTENSITY;                  // move to the stage where you assign intensity
+                        intCount = 0;      //parse and zero the int Count
+                        break;
+                        /*___________THROUGH__________________________*/
+                    } if (selectionType == THROUGH) {           // if input = 'THROUGH'
+                        smpleDisplay(" at ", true, true);
+                        channelTwoInt = atoi (chTwoKpdChar);      //parse array to an int
+                        if (channelTwoInt > 512) {          // prevent values from going over the max
+                            channelTwoInt = 512;
+                        }
+                        kpdState = DMX_INTENSITY;                  // move to the stage where you assign intensity
+                        intCount = 0;      //parse and zero the int Count
+                        break;
+                    }
+                }
+                break;
+                /*___________< 3 INTEGERS________________________*/
+            } else if (intCount == 2) {                          //more than 2 integer places
+                chTwoKpdChar[intCount - 2] = chTwoKpdChar[intCount - 1]; chTwoKpdChar[intCount - 1] = chTwoKpdChar[intCount]; //shifting values to next array position
+                chTwoKpdChar[intCount] = kpdInput;   // adding the char to the array
+                smpleDisplay(chTwoKpdChar, true, true);
+                kpdState = DMXCH_TWO;                   // keep wrapping digits in this controlModeuntil modifier
+                intCount = 2;
+                break;
+                /*___________< 3 INTEGERS________________________*/
+            } else {                                                 // if we aren't overflowing, do this
+                chTwoKpdChar[intCount] = kpdInput;   // adding the char to the array
+                smpleDisplay(chTwoKpdChar, true, true);
+                kpdState = DMXCH_TWO;                   // stay in this controlModeuntil modifier is pressed
+                intCount++;
+                break;                                          // leave the switch
+            }
+
+            //___DMX_INTENSITY____________________________________
+        case DMX_INTENSITY:                  // Intensity Assignment Part of the Function
+            if (isAnInteger == false) {
+                if ((kpdInput == 'E') && (intCount > 0)) {
+                    if (controlMode == KPD_MODE) {      // if it is in KPD_MODE control mode
+                        if (selectionType == SINGLECHANNEL) {
+                            intCount = 0;
+                            kpdIntensityFloat = atof (intensityString);
+                            dmxDisplay(channelOneInt, SINGLECHANNEL, channelTwoInt, intensityString, true, true);
+                            kpdSubIntensity(channelOneInt, SINGLECHANNEL, 0, kpdIntensityFloat);
+                            kpdState = NO_CMD;
+                            selectionType = NONE; channelOneInt = 0; channelTwoInt = 0; intensityString[0] = '0';
+                            break;
+                        } if (selectionType == AND) {
+                            intCount = 0;
+                            kpdIntensityFloat = atof (intensityString);
+                            dmxDisplay(channelOneInt, AND, channelTwoInt, intensityString, true, true);
+                            kpdSubIntensity(channelOneInt, AND, channelTwoInt, kpdIntensityFloat);
+                            kpdState = NO_CMD;
+                            break;
+                        } if (selectionType == THROUGH) {
+                            intCount = 0;
+                            kpdIntensityFloat = atof (intensityString);
+                            dmxDisplay(channelOneInt, THROUGH, channelTwoInt, intensityString, true, true);
+                            kpdSubIntensity(channelOneInt, THROUGH, channelTwoInt, kpdIntensityFloat);
+                            kpdState = NO_CMD;
+                            break;
+                        }
+                    } if (controlMode == KPDFADER_MODE) {     // if it is in KPDFADER_MODE control mode
+                        if (selectionType == SINGLECHANNEL) {
+                            int i = atoi (intensityString);
+                            dmxDisplay(channelOneInt, SINGLECHANNEL, 0, (analogFaderMap[i - 1]), true, true);
+                            kpdfaderSubIntensity(channelOneInt, SINGLECHANNEL, 0, (analogFaderMap[i - 1]));
+                            kpdState = NO_CMD;
+                            intCount = 0;
+                            break;
+                        } if (selectionType == AND) {
+                            int i = atoi (intensityString);
+                            dmxDisplay(channelOneInt, AND, channelTwoInt, (analogFaderMap[i - 1]), true, true);
+                            kpdfaderSubIntensity(channelOneInt, AND, channelTwoInt, (analogFaderMap[i - 1]));
+                            kpdState = NO_CMD;                  // move to the stage where you assign intensity
+                            intCount = 0;
+                            break;
+                        } if (selectionType == THROUGH) {
+                            int i = atoi (intensityString);
+                            dmxDisplay(channelOneInt, THROUGH, channelTwoInt, (analogFaderMap[i - 1]), true, true);
+                            kpdfaderSubIntensity(channelOneInt, THROUGH, channelTwoInt, (analogFaderMap[i - 1]));
+                            kpdState = NO_CMD;                  // move to the stage where you assign intensity
+                            intCount = 0;
+                            break;
+                        }
+                    }
+                } break;
+                /*___________ONLY ALLOW 1 through 8 keys Representing Faders__________________________*/
+            } else if ((controlMode == KPDFADER_MODE) && (kpdInput != '0') && (kpdInput != '9')) {
+                intCount = 0;
+                intensityString[intCount] = kpdInput;
+                kpdState = DMX_INTENSITY;
+                smpleDisplay(intensityString, true, true);
+                intCount = 1;
+                break;
+            }
+            /*___________9 INTEGERS__________________________*/
+            else if ((controlMode == KPD_MODE) && (intCount > 8 )) {
+                intWrap(intensityString, kpdInput, 9);
+                kpdState = DMX_INTENSITY;
+                smpleDisplay(intensityString, true, true);
+                intCount = 9;
+                break;
+                /*___________>9 INTEGERS__________________________*/
+            } else if ((controlMode == KPD_MODE) && (intCount < 9 )) {
+                intensityString[intCount] = kpdInput;
+                kpdState = DMX_INTENSITY;
+                smpleDisplay(intensityString, true, true);
+                intCount++;
+                break;
+            }
     }
-
-    // Use for transmit with channels from 0-511
-    // Will set all other channels to 0
-    void setChannels(const uint16_t startAddress, const uint8_t* values, const uint16_t length);
-    // Use for transmit with channels from 1-512
-    // Will set all other channels to 0
-    void setDmxChannels(const uint16_t startAddress, const uint8_t* values, const uint16_t length)
-    {
-        setChannels(startAddress - 1, values, length);
-    }
-
-  private:
-    TeensyDmx(const TeensyDmx&);
-    TeensyDmx& operator=(const TeensyDmx&);
-
-    enum State { IDLE, BREAK, DMX_TX, DMX_RECV, DMX_COMPLETE, RDM_RECV, RDM_RECV_CHECKSUM_HI, RDM_RECV_CHECKSUM_LO, RDM_RECV_POST_CHECKSUM };
-
-    void startTransmit();
-    void stopTransmit();
-    void startReceive();
-    void stopReceive();
-
-    void setDirection(bool transmit);
-
-    void completeFrame();  // Called at error ISR during recv
-    void processRDM();
-    void respondMessage(uint16_t nackReason);
-    void handleByte(uint8_t c);
-
-    void nextTx();
-
-    // RDM handler functions
-    void rdmDiscUniqueBranch();
-    uint16_t rdmDiscMute();
-    uint16_t rdmDiscUnMute();
-    uint16_t rdmGetCommsStatus();
-    uint16_t rdmSetCommsStatus();
-    uint16_t rdmGetDeviceInfo();
-    uint16_t rdmGetDeviceLabel();
-    uint16_t rdmSetDeviceLabel();
-    uint16_t rdmGetDeviceModelDescription();
-    uint16_t rdmGetDMXStartAddress();
-    uint16_t rdmSetDMXStartAddress();
-    uint16_t rdmGetIdentifyDevice();
-    uint16_t rdmSetIdentifyDevice();
-    uint16_t rdmGetManufacturerLabel();
-    uint16_t rdmGetSoftwareVersionLabel();
-    uint16_t rdmGetSupportedParameters();
-
-    uint16_t rdmCalculateChecksum(uint8_t* data, uint8_t length);
-    bool isForMe(const byte* id);
-    bool isForVendor(const byte* id);
-    bool isForAll(const byte* id);
-
-    void maybeIncrementShortMessage();
-    void maybeIncrementChecksumFail();
-    void maybeIncrementLengthMismatch();
-
-    HardwareSerial& m_uart;
-
-    volatile uint8_t m_dmxBuffer1[DMX_BUFFER_SIZE];
-    volatile uint8_t m_dmxBuffer2[DMX_BUFFER_SIZE];
-    volatile uint8_t *m_activeBuffer;
-    volatile uint8_t *m_inactiveBuffer;
-    volatile uint16_t m_dmxBufferIndex;
-    volatile unsigned int m_frameCount;
-    volatile uint16_t m_shortMessage;
-    volatile uint16_t m_checksumFail;
-    volatile uint16_t m_lengthMismatch;
-    volatile bool m_newFrame;
-    volatile bool m_rdmChange;
-    Mode m_mode;
-    State m_state;
-    volatile uint8_t* m_redePin;
-    bool m_rdmMute;
-    bool m_identifyMode;
-    RdmInit *m_rdm;
-    volatile bool m_rdmNeedsProcessing;
-    RdmData m_rdmBuffer;
-    uint16_t m_rdmChecksum;
-    // Allow an extra byte for a null if we have a 32 character string
-    char m_deviceLabel[RDM_MAX_STRING_LENGTH + 1];
-    static_assert((sizeof(m_deviceLabel) == 33), "Invalid size for m_deviceLabel");
-
-    friend void UART0RxStatus(void);
-    friend void UART0TxStatus(void);
-    friend void UART1RxStatus(void);
-    friend void UART1TxStatus(void);
-    friend void UART2RxStatus(void);
-    friend void UART2TxStatus(void);
-#ifndef IRQ_UART0_ERROR
-    friend void UART0RxError(void);
-    friend void UART1RxError(void);
-    friend void UART2RxError(void);
-#endif
-#ifdef HAS_KINETISK_UART3
-    friend void UART3RxStatus(void);
-    friend void UART3TxStatus(void);
-    friend void UART3RxError(void);
-#endif
-#ifdef HAS_KINETISK_UART4
-    friend void UART4RxStatus(void);
-    friend void UART4TxStatus(void);
-    friend void UART4RxError(void);
-#endif
-#ifdef HAS_KINETISK_UART5
-    friend void UART5RxStatus(void);
-    friend void UART5TxStatus(void);
-    friend void UART5RxError(void);
-#endif
-};
-
-#endif  // _TEENSYDMX_H
+}
