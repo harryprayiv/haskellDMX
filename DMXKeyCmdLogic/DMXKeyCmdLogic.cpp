@@ -1,10 +1,9 @@
 /*********************************************************************
  Harry Keypad V3
- **********************************************************************
-
-#include <Arduino.h> /* Arduino Includes*/
-#include <TeensyDmx.h> /* Teensy DMX Library */
-#include <Keypad.h> /* Keypad Library */
+ ********************************************************************/
+//#include <Arduino.h> /* Arduino Includes */
+//#include <TeensyDmx.h> /* Teensy DMX Library */
+//#include <Keypad.h> /* Keypad Library */
 
 /*Teensy DMX Settings_________________________________________________*/
 #define DMX_REDE 24
