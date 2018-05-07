@@ -1,64 +1,10 @@
 /*********************************************************************
- Harry Pockonsole V2
+ Harry Keypad V3
  **********************************************************************
- Board: VoV1366v0.8
- Designed by Volt-Vision
-
- Code:
- ______________________________
- DMX Connections (hardware UART @ Serial1) to TI SN75LBC184D:
- DMX1RX on pin 0
- DMX1TX on pin 1
- DMX1DE and RE (DMX_REDE) on pin 24
- _____________________________
- OLED connections (software SPI):
- OLED MOSI0 on pin 11
- OLED SCK0 on pin 13
- OLED_DC on pin 32
- OLED_RST on pin 33
- OLED_CS on pin 34
- ______________________________
- Wiper Connections (10k mini pots):
- Wiper 1: A1
- Wiper 2: A2
- Wiper 3: A3
- Wiper 4: A4
- Wiper 5: A5
- Wiper 6: A6
- Wiper 7: A7
- Wiper 8: A8
- Wiper 9: A9
- ______________________________
- 4x4 Keypad:
- Rows: D9, D8, D7, D6
- Columns = D5, D4, D3, D2
- ______________________________
- Breadboard Area:
- Digital Pins: D10,D12,D25,D25,D27,D28,D29,D30 (D2-D9 used in keypad)
- Analog Pins: D31/A12,D35/A16,D36/A17,D37/A18,D38/A19,D39/A20
- 3V3 Rail
- Ground Rail (future iterations: switch for decoupling cap)
- ***********************************************************************/
 
 #include <Arduino.h> /* Arduino Includes*/
 #include <TeensyDmx.h> /* Teensy DMX Library */
-#include <U8g2lib.h> /* U8G2 Library */
-#include <U8x8lib.h> /* U8x8 Library */
 #include <Keypad.h> /* Keypad Library */
-#include <EasingLibrary.h> /* Easing Library */
-#include <Fsm.h> /* Finite State Machine Library */
-
-
-#ifdef U8X8_HAVE_HW_SPI
-#include <SPI.h>
-#endif
-#ifdef U8X8_HAVE_HW_I2C
-#include <Wire.h>
-#endif
-
-//#ifndef Keypadlib_KEY_H_
-//#define Keypadlib_KEY_H_
-
 
 /*Teensy DMX Settings_________________________________________________*/
 #define DMX_REDE 24
@@ -88,15 +34,7 @@ enum pgmMode {
 };
 pgmMode controlMode;
 
-bool modeChosen = false; //used to decide whether the mode has already been set
-
-
-// __________________________________DISPLAY MODES___________________________
-enum displayMode {
-    POCKONSOLED,
-    SERIALDISPLAY
-};
-displayMode display = POCKONSOLED;
+bool modeChosen = false; //mode set state
 
 // _________________________________SELECTION MODES__________________________
 enum selectionMode {
@@ -106,76 +44,6 @@ enum selectionMode {
     THROUGH
 };
 selectionMode selectionType = NONE;
-
-
-
-// _________________________________ANIMATION MODES__________________________
-
-enum transMode {                // for selecting the transition
-    BACK_EASE,
-    BOUNCE_EASE,
-    CIRCULAR_EASE,
-    CUBIC_EASE,
-    ELASTIC_EASE,
-    EXPONENTIAL_EASE,
-    LINEAR_EASE,
-    QUADRATIC_EASE,
-    QUARTIC_EASE,
-    QUINTIC_EASE,
-    SINE_EASE
-};
-transMode transType = LINEAR_EASE;        // default curve is Linear
-
-// creating instances of variables
-BackEase back;
-BounceEase bounce;
-CircularEase circular;
-CubicEase cubic;
-ElasticEase elastic;
-ExponentialEase exponential;
-LinearEase linear;
-QuadraticEase quadratic;
-QuarticEase quartic;
-QuinticEase quintic;
-SineEase sine;
-
-enum transubMode {          // for selecting which part of the transition has a curve applied to it
-    IN,
-    OUT,
-    IN_OUT,
-};
-transubMode transPart = IN_OUT;  // intializing with both in and out with a curve on them.
-
-// __________________________________ANIMATION STATES__________________________
-enum animState {
-    OFF,
-    STOP,
-    PLAY,
-    PAUSE,
-    REWIND,
-    FASTFORWARD,
-    RECORD,
-    LOOP
-};
-animState playBackState = OFF;        // initialize to off to prevent empty animations from playing
-
-float playBackDuration = 30.0         // 30 seconds
-float playBackSpeed = 1.0             //multiplier for speed
-byte keyFrames[512] = {0};             // storage for DMX keyframe values in the animation
-
-// __________________________________KEYPAD PROGRESS__________________________
-enum kpdProgress {
-    MODE_SELECT,
-    NO_CMD,
-    DMXCH_ONE,
-    DMXCH_TWO,
-    DMX_INTENSITY
-};
-kpdProgress kpdState = MODE_SELECT;
-
-//___________________________U8G2 CONSTRUCTOR (declares pinout for Teensy 3.6 with the U8g2lib.h OLED library)
-U8G2_SSD1306_128X64_NONAME_F_4W_SW_SPI u8g2(U8G2_R0, /* clock=*/ 13, /* data=*/ 11, /* cs=*/ 34, /* dc=*/ 32, /* reset=*/ 33);
-
 
 /* keypad constants                  ____________________________________________________*/
 const byte ROWS = 4; //four rows
@@ -205,87 +73,96 @@ int channelTwoInt;                // storage for the array of characters into an
 char intensityString[9];           // first channel in commmand
 float kpdIntensityFloat;      // first intensity channel
 
+// __________________________________KEYPAD PROGRESS__________________________
+enum kpdProgress {
+    MODE_SELECT,
+    NO_CMD,
+    DMXCH_ONE,
+    DMXCH_TWO,
+    DMX_INTENSITY
+};
+kpdProgress kpdState = MODE_SELECT;
 
-//___________________________
+KpdParser::KpdParser(HardwareSerial& uart, RdmInit* rdm) :
+    m_newFrame(false),
+    m_rdmNeedsProcessing(false),
+    m_rdmBuffer(),
+    m_rdmChecksum(0),
+    m_deviceLabel{0}
+{
 
-// void setup() {
-//     Dmx.setMode(TeensyDmx::DMX_OUT);  // Teensy DMX Declaration of Output
-//     analogReadRes(16);
-//     analogReadAveraging(8);
-//     introPage(display);
-//     delay(600);
-//     u8g2.clearBuffer();
-// }
-//
-// void loop() {
-//        char key = keypad.getKey();
-//        if (modeChosen == false){
-//
-//             if (key != NO_KEY) {
-//                 kpdToCommand(key);
-//
-//             }
-//         }else {
-//         switch (controlMode) {
-//                case FADER_MODE:
-//                    u8g2.clearBuffer();
-//                    fadersToDmxWscaler(16,9);
-//
-//
-//                    break;
-//
-//                case KPD_MODE:
-//                    if (key != NO_KEY) {
-//                       kpdToCommand(key);
-//                     }
-//                     break;
-//
-//                 case KPDFADER_MODE:
-//                     if (key != NO_KEY) {
-//                         kpdToCommand(key);
-//                     }
-//                     break;
-//
-//                case ANIMATION_MODE:
-//                      if (key != NO_KEY) {
-//                         kpdToCommand(key);
-//                     }
-//                     break;
-//             }
-//         }
-// }
+void setup() {
+    // Dmx.setMode(TeensyDmx::DMX_OUT);  // Teensy DMX Declaration of Output
+    // analogReadRes(16);
+    // analogReadAveraging(8);
+    // introPage(display);
+    // delay(600);
+    // u8g2.clearBuffer();
+}
 
-
+void loop() {
+   // char key = keypad.getKey();
+   // if (modeChosen == false){
+   //
+   //      if (key != NO_KEY) {
+   //          kpdToCommand(key);
+   //
+   //      }
+   //  }else {
+   //  switch (controlMode) {
+   //         case FADER_MODE:
+   //             u8g2.clearBuffer();
+   //             fadersToDmxWscaler(16,9);
+   //
+   //
+   //             break;
+   //
+   //         case KPD_MODE:
+   //             if (key != NO_KEY) {
+   //                kpdToCommand(key);
+   //              }
+   //              break;
+   //
+   //          case KPDFADER_MODE:
+   //              if (key != NO_KEY) {
+   //                  kpdToCommand(key);
+   //              }
+   //              break;
+   //
+   //         case ANIMATION_MODE:
+   //               if (key != NO_KEY) {
+   //                  kpdToCommand(key);
+   //              }
+   //              break;
+   //      }
+   //  }
+}
 
 void kpdToCommand(char key) {
     switch (key) {
-            //___________________________________________________________________________________________________
-        case '@':                       //  fall through switch for the '@' key with function trigger
-        case 'T':                       //  fall through switch for the 'T' (through) key with function trigger
-        case '&':                       //  fall through switch for the '&' key with function trigger
-        case '-':                       //  fall through switch for the '-' key with function trigger
-        case 'E':                       //  fall through switch for the 'E' key with function trigger
-        case 'S':                       //  mapping for 'S' key with function trigger
+        //______________________________________________________________________________
+        case '@':  //  fall through switch for the '@' key with function trigger
+        case 'T':  //  fall through switch for the 'T' (through) key with function trigger
+        case '&':  //  fall through switch for the '&' key with function trigger
+        case '-':  //  fall through switch for the '-' key with function trigger
+        case 'E':  //  fall through switch for the 'E' key with function trigger
+        case 'S': //  mapping for 'S' key with function trigger
             keypadLogic(false, key);
             break;
-        case '0':                       //  fall through switch for the '0' key with function trigger
-        case '1':                       //  fall through switch for the '1' key with function trigger
-        case '2':                       //  fall through switch for the '2' key with function trigger
-        case '3':                       //  fall through switch for the '3' key with function trigger
-        case '4':                       //  fall through switch for the '4' key with function trigger
-        case '5':                       //  fall through switch for the '5' key with function trigger
-        case '6':                       //  fall through switch for the '6' key with function trigger
-        case '7':                       //  fall through switch for the '7' key with function trigger
-        case '8':                       //  fall through switch for the '8' key with function trigger
+        case '0': //  fall through switch for the '0' key with function trigger
+        case '1': //  fall through switch for the '1' key with function trigger
+        case '2': //  fall through switch for the '2' key with function trigger
+        case '3': //  fall through switch for the '3' key with function trigger
+        case '4': //  fall through switch for the '4' key with function trigger
+        case '5': //  fall through switch for the '5' key with function trigger
+        case '6': //  fall through switch for the '6' key with function trigger
+        case '7': //  fall through switch for the '7' key with function trigger
+        case '8': //  fall through switch for the '8' key with function trigger
         case '9':                       //  mapping for '9' key with function trigger
             keypadLogic(true, key);
             break;
     }
 }
-
-
-
-
 
 void keypadLogic(bool isAnInteger, char kpdInput) {
     switch (kpdState) {
@@ -548,103 +425,107 @@ void keypadLogic(bool isAnInteger, char kpdInput) {
     }
 }
 
-
-
-
-
-
-
-
-
-
-keypadIntensity(bool isAnInteger, char kpdInput, selectionType SINGLECHANNEL){
-  if (isAnInteger == false) {
-                if ((kpdInput == 'E') && (intCount > 0)) {
-                    if (controlMode == KPD_MODE) {      // if it is in KPD_MODE control mode
-
-
-                        if (selectionType == SINGLECHANNEL) {
-                            intCount = 0;
-                            kpdIntensityFloat = atof (intensityString);
-                            dmxDisplay(channelOneInt, SINGLECHANNEL, channelTwoInt, intensityString, true, true);
-                            kpdSubIntensity(channelOneInt, SINGLECHANNEL, 0, kpdIntensityFloat);
-                            kpdState = NO_CMD;
-                            selectionType = NONE; channelOneInt = 0; channelTwoInt = 0; intensityString[0] = '0';
-                            break;
-                        } if (selectionType == AND) {
-
-
-
-                            intCount = 0;
-                            kpdIntensityFloat = atof (intensityString);
-                            dmxDisplay(channelOneInt, AND, channelTwoInt, intensityString, true, true);
-                            kpdSubIntensity(channelOneInt, AND, channelTwoInt, kpdIntensityFloat);
-                            kpdState = NO_CMD;
-                            break;
-                        } if (selectionType == THROUGH) {
-
-
-
-                            intCount = 0;
-                            kpdIntensityFloat = atof (intensityString);
-                            dmxDisplay(channelOneInt, THROUGH, channelTwoInt, intensityString, true, true);
-                            kpdSubIntensity(channelOneInt, THROUGH, channelTwoInt, kpdIntensityFloat);
-                            kpdState = NO_CMD;
-                            break;
-                        }
-                    } if (controlMode == KPDFADER_MODE) {     // if it is in KPDFADER_MODE control mode
-                        if (selectionType == SINGLECHANNEL) {
-                            int i = atoi (intensityString);
-                            dmxDisplay(channelOneInt, SINGLECHANNEL, 0, (analogFaderMap[i - 1]), true, true);
-                            kpdfaderSubIntensity(channelOneInt, SINGLECHANNEL, 0, (analogFaderMap[i - 1]));
-                            kpdState = NO_CMD;
-                            intCount = 0;
-                            break;
-                        } if (selectionType == AND) {
-                            int i = atoi (intensityString);
-                            dmxDisplay(channelOneInt, AND, channelTwoInt, (analogFaderMap[i - 1]), true, true);
-                            kpdfaderSubIntensity(channelOneInt, AND, channelTwoInt, (analogFaderMap[i - 1]));
-                            kpdState = NO_CMD;                  // move to the stage where you assign intensity
-                            intCount = 0;
-                            break;
-                        } if (selectionType == THROUGH) {
-                            int i = atoi (intensityString);
-                            dmxDisplay(channelOneInt, THROUGH, channelTwoInt, (analogFaderMap[i - 1]), true, true);
-                            kpdfaderSubIntensity(channelOneInt, THROUGH, channelTwoInt, (analogFaderMap[i - 1]));
-                            kpdState = NO_CMD;                  // move to the stage where you assign intensity
-                            intCount = 0;
-                            break;
-                        }
-                    }
-                } break;
-                /*___________ONLY ALLOW 1 through 8 keys Representing Faders__________________________*/
-            } else if ((controlMode == KPDFADER_MODE) && (kpdInput != '0') && (kpdInput != '9')) {
-                intCount = 0;
-                intensityString[intCount] = kpdInput;
-                kpdState = DMX_INTENSITY;
-                smpleDisplay(intensityString, true, true);
-                intCount = 1;
+// Mode Select
+void kpdModeSelect(bool isAnInteger, char kpdInput){
+    if ((isAnInteger == false) && (pgmModeSelectionInt > 0)) {
+        if (kpdInput == 'E') {
+            if (pgmModeSelectionInt == 1) {
+                smpleDisplay("Fader Mode", true, true);
+                controlMode = FADER_MODE;
+                kpdState = NO_CMD;
+                modeChosen = true;
+                break;
+            } if (pgmModeSelectionInt == 2) {
+                smpleDisplay("Keypad Mode", true, true);
+                controlMode = KPD_MODE;
+                kpdState = NO_CMD;
+                modeChosen = true;
+                break;
+            } if (pgmModeSelectionInt == 3) {
+                smpleDisplay("Keypad Fader Mode", true, true);
+                controlMode = KPDFADER_MODE;
+                kpdState = NO_CMD;
+                modeChosen = true;
+                break;
+            }  if (pgmModeSelectionInt == 4) {
+                smpleDisplay("Animation Mode", true, true);
+                controlMode = ANIMATION_MODE;
+                kpdState = NO_CMD;
+                modeChosen = true;
                 break;
             }
-            /*___________9 INTEGERS__________________________*/
-            else if ((controlMode == KPD_MODE) && (intCount > 8 )) {
-                intWrap(intensityString, kpdInput, 9);
-                kpdState = DMX_INTENSITY;
-                smpleDisplay(intensityString, true, true);
-                intCount = 9;
-                break;
-                /*___________>9 INTEGERS__________________________*/
-            } else if ((controlMode == KPD_MODE) && (intCount < 9 )) {
-                intensityString[intCount] = kpdInput;
-                kpdState = DMX_INTENSITY;
-                smpleDisplay(intensityString, true, true);
-                intCount++;
-                break;
-            }
+            kpdState = MODE_SELECT; // any non-integer than "Enter" won't work here
+            break;
+        }
+        kpdState = MODE_SELECT;
+        break;
+    } else {
+        if (kpdInput == '1') {      //if 1 is entered
+            pgmModeSelectionInt = 1;
+            smpleDisplay(pgmModeSelectionInt, true, true);
+            kpdState = MODE_SELECT;
+            break;
+        } if (kpdInput == '2') {     //if 2 is entered
+            pgmModeSelectionInt = 2;
+            smpleDisplay(pgmModeSelectionInt, true, true);
+            kpdState = MODE_SELECT;
+            break;
+        } if (kpdInput == '3') {     //if 3 is entered
+            pgmModeSelectionInt = 3;
+            smpleDisplay(pgmModeSelectionInt, true, true);
+            kpdState = MODE_SELECT;
+            break;
+        } if (kpdInput == '4') {     //if 4 is entered
+            pgmModeSelectionInt = 4;
+            smpleDisplay(pgmModeSelectionInt, true, true);
+            kpdState = MODE_SELECT;
+            break;
+        } else {
+            smpleDisplay("Number not allowed", true, true);
+            kpdState = MODE_SELECT;
+            break;
+        }
     }
 }
 
+//  KPD NoCMD
+void kpdNoCMD(bool isAnInteger, char kpdInput){
+    if (isAnInteger == false) {
+        kpdState = NO_CMD;
+        break;
+    } else {
+        if (kpdInput == '0') {      //don't count a zero as the first integer in the array
+        kpdState = NO_CMD;
+        break;
+    }
+    chOneKpdChar[intCount] = kpdInput;
+    smpleDisplay(chOneKpdChar, true, true);
+    intCount++;
+    kpdState = DMXCH_ONE;
+    break;
+    }
+}
 
+// Keypad Input to Number
+void kpdNum((bool isAnInteger, char kpdInput, enum ){
+/*___________3 INTEGERS__________________________*/
+    } if (intCount == 2) {       //more than 2 integer places
+        chOneKpdChar[intCount - 2] = chOneKpdChar[intCount - 1]; //shifting values to next array position
+        chOneKpdChar[intCount - 1] = chOneKpdChar[intCount]; //shifting values to next array position
+        chOneKpdChar[intCount] = kpdInput;   // adding the char to the array
+        smpleDisplay(chOneKpdChar, true, true);
+        kpdState = DMXCH_ONE;                   // keep wrapping digits in this controlModeuntil modifier
+        intCount = 2;
+        break;
+        /*___________< 3 INTEGERS________________________*/
+    } else {      // if we aren't overflowing, do this
+        chOneKpdChar[intCount] = kpdInput;   // adding the char to the array
+        smpleDisplay(chOneKpdChar, true, true);
+        kpdState = DMXCH_ONE;  // stay in this controlModeuntil modifier is pressed
+        intCount++;
+        break;    // leave the switch
+    }
+}
 
 
 int main () {
