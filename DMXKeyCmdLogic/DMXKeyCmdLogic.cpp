@@ -487,55 +487,55 @@ void kpdModeSelect(bool isAnInteger, char kpdInput){
     }
 }
 
-//  KPD NoCMD
-void kpdNoCMD(bool isAnInteger, char kpdInput){
-    if (isAnInteger == false) {
-        kpdState = NO_CMD;
-        break;
-    } else {
-        if (kpdInput == '0') {      //don't count a zero as the first integer in the array
-        kpdState = NO_CMD;
-        break;
-    }
-    chOneKpdChar[intCount] = kpdInput;
-    smpleDisplay(chOneKpdChar, true, true);
-    intCount++;
-    kpdState = DMXCH_ONE;
+
+
+// deal with a number button presses (1,2,3,4,5,6,7,8,9,0)
+void kpdNum(char cmdString[], char kpdInput){
+  if (cmdString == empty){
+    // do nothing and print a warning
     break;
-    }
+  }else(){
+    // add 'input' to the string
+    char c = kpdInput;
+    strncat(cmdString, &c, 1);
+    break;
+  }
 }
 
-// Keypad Input to Number
-void kpdNum((bool isAnInteger, char kpdInput, enum ){
-/*___________3 INTEGERS__________________________*/
-    } if (intCount == 2) {       //more than 2 integer places
-        chOneKpdChar[intCount - 2] = chOneKpdChar[intCount - 1]; //shifting values to next array position
-        chOneKpdChar[intCount - 1] = chOneKpdChar[intCount]; //shifting values to next array position
-        chOneKpdChar[intCount] = kpdInput;   // adding the char to the array
-        smpleDisplay(chOneKpdChar, true, true);
-        kpdState = DMXCH_ONE;                   // keep wrapping digits in this controlModeuntil modifier
-        intCount = 2;
-        break;
-        /*___________< 3 INTEGERS________________________*/
-    } else {      // if we aren't overflowing, do this
-        chOneKpdChar[intCount] = kpdInput;   // adding the char to the array
-        smpleDisplay(chOneKpdChar, true, true);
-        kpdState = DMXCH_ONE;  // stay in this controlModeuntil modifier is pressed
-        intCount++;
-        break;    // leave the switch
-    }
+// deal with a modifier button press (&,-,T,S, etc)
+void kpdMOD(char cmdString[], char kpdInput){
+  if (cmdString == empty){
+    // do nothing and print a warning
+    break;
+  }else(){
+    // add 'input' to the string
+    char c = kpdInput;
+    strncat(cmdString, &c, 1);
+    break;
+  }
+}
+
+// deal with a Enter button press
+void kpdENT(char cmdString[], char kpdInput){
+// take the boolen array and apply the
+}
+
+void kpdCmd((bool isAnInteger, char kpdInput, enum ){
+//deal with
 }
 
 
-int main () {
-   // Local variable declaration:
-   int a = 10;
 
-   // while loop execution
-   while( a < 20 ) {
-      cout << "value of a: " << a << endl;
-      a++;
-   }
-
-   return 0;
-}
+byte dmxVal[512];  // dmx levels for use in TeensyDMX
+byte dmxValBuffer[512];    //place for storing values to transition to
+int channelMap[512] = {0}; //The ability to map channels together to create large submasters
+char intensityString[9];         // intensity string
+bool dmxSelection[512] = { false };//non-destructive DMX kpd channel selection
+int dmxSubMaster[512] = { 0 };//non-destructive DMX kpd channel submaster selection
+char chOneKpdChar[5];           // first string
+char chTwoKpdChar[5];           // second string
+int pgmModeSelectionInt = 0; // used to decide which mode is selected with integers 1-3
+int channelOneInt;                // storage for the array of characters into an integer
+int intCount = 0;      // initializing the integer count at 0
+int channelTwoInt;                // storage for the array of characters into an integer
+float kpdIntensityFloat;      // first intensity channel
