@@ -8,7 +8,6 @@
 /*Teensy DMX Settings_____________________________*/
 #define DMX_REDE 24
 TeensyDmx Dmx(Serial1, DMX_REDE);
-
 /* keypad constants_______________________________*/
 const byte ROWS = 4; //four rows
 const byte COLS = 4; //three columns
@@ -22,31 +21,27 @@ byte rowPins[ROWS] = {9, 8, 7, 6}; //connect to the row pinouts of the keypad
 byte colPins[COLS] = {5, 4, 3, 2}; //connect to the column pinouts of the keypad
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
-
 /*DMX Values____________________________________________*/
 const long analogFaders = 9;            //there will always be the same number of pots (9)
 const int analogFaderMap[analogFaders] = {1, 2, 3, 4, 5, 6, 7, 8, 9}; // this is to allow reconfigurable complex pin assignments
 long dmxChannels = 512;  // intializing the number of values in a DMX instruction
 float scalerVal;  // floating point scaler
-byte dmxVal[512];           // limit to one universe
-byte dmxValBuffer[512];    //place for storing values to transition to
+//byte dmxVal[512];           // limit to one universe
+//byte dmxValBuffer[512];    //place for storing values to transition to
 int displayVal[512] = {0};  /* space for display values*/
 
-int currentNumCount = 0;      // initializing the integer count at 0
+int lengthCount = 0;  // initializing the integer count at 0
+char chanAchars[5];   // first channel in commmand
+char chanBchars[5];   // second channel in commmand
+char intensityChars[9]; // intensity assignment variable
+int chanAint;   // storage for the array of characters into an integer
+int chanBint;  // storage for the array of characters into an integer
 bool dmxSelection[512] = { false };    //enables non-destructive DMX kpd channel selection
 int channelMap[512] = {0};  // map channels to create large submasters
-char chOneKpdChar[5];     // first channel in commmand
-int channelOneInt;   // storage for the array of characters into an integer
-
-char chTwoKpdChar[5];  // second channel in commmand
-int channelTwoInt;  // storage for the array of characters into an integer
-
-char intensityString[9];        // first channel in commmand
 float kpdIntensityFloat;   // first intensity channel
 
-int pgmModeSelectionInt = 0; // used to decide which mode is selected with integers 1-3 for now (more as modes expand)
-
-
+int pgmModeSelectionInt = 0; // mode selection with integers 1-3 for now (more as modes expand)
+bool modeChosen = false; //mode set state
 // ____________________KEYPAD PROGRESS_______________
 enum kpdProgress {
     CMD_EMPTY,
@@ -64,8 +59,6 @@ enum pgmMode {
     ANIMATION_MODE
 };
 pgmMode controlMode;
-
-bool modeChosen = false; //mode set state
 
 // _____________________SELECTION MODES__________________
 enum selectionMode {
@@ -130,7 +123,7 @@ void kpdToCommand(char key) {
         case '&':  //  fall through switch for the '&' key with function trigger
         case '-':  //  fall through switch for the '-' key with function trigger
         case 'S': //  mapping for 'S' key with function trigger
-            keypadLogic(key);
+            kpdMOD(key);
             break;
         case '@':  //  switch for the '@' key with function trigger
             kpdINTSYinput(key);
@@ -159,126 +152,75 @@ void kpdCHinput(char kpdInput) {
             if (kpdInput == '0') {      //don't count a zero as the first integer in the array
                     break;
                 }
-                chOneKpdChar[currentNumCount] = kpdInput;
-                currentNumCount++;
+                chanAchars[lengthCount] = kpdInput;
+                lengthCount++;
                 break;
             }
         case DMXCH_A:
-            if (currentNumCount == 2) {/*___________3 INTEGERS_______________*/
-                chOneKpdChar[currentNumCount - 2] = chOneKpdChar[currentNumCount - 1]; //shifting values to next array position
-                chOneKpdChar[currentNumCount - 1] = chOneKpdChar[currentNumCount];
-                chOneKpdChar[currentNumCount] = kpdInput;   // adding the char to the array
+            if (lengthCount == 2) {/*___________3 INTEGERS_______________*/
+                chanAchars[lengthCount - 2] = chanAchars[lengthCount - 1]; //shifting to next array position
+                chanAchars[lengthCount - 1] = chanAchars[lengthCount];
+                chanAchars[lengthCount] = kpdInput;   // adding the char to the array
                 kpdState = DMXCH_A;    // keep wrapping digits in this controlModeuntil modifier
-                currentNumCount = 2;
+                lengthCount = 2;
                 break;
-            } else { /*____________________< 3 INTEGERS________________*/
-                chOneKpdChar[currentNumCount] = kpdInput;   // adding the char to the array
+            } else { /*___________< 3 INTEGERS________________*/
+                chanAchars[lengthCount] = kpdInput;   // adding the char to the array
                 kpdState = DMXCH_A; // stay in this controlModeuntil modifier is pressed
-                currentNumCount++;
+                lengthCount++;
                 break;    // leave the switch
             }
         case DMXCH_B:
-            if (currentNumCount == 2) { /*___________3 INTEGERS_______________*/
-                chTwoKpdChar[currentNumCount - 2] = chTwoKpdChar[currentNumCount - 1]; chTwoKpdChar[currentNumCount - 1] = chTwoKpdChar[currentNumCount]; //shifting values to next array position
-                chTwoKpdChar[currentNumCount] = kpdInput;   // adding the char to the array
-                currentNumCount = 2;
+            if (lengthCount == 2) { /*___________3 INTEGERS_______________*/
+                chanBchars[lengthCount - 2] = chanBchars[lengthCount - 1]; chanBchars[lengthCount - 1] = chanBchars[lengthCount]; //shifting values to next array position
+                chanBchars[lengthCount] = kpdInput;   // adding the char to the array
+                lengthCount = 2;
                 break;
-            } else {  /*____________________< 3 INTEGERS________________*/
-                chTwoKpdChar[currentNumCount] = kpdInput;   // adding the char to the array
-                currentNumCount++;
+            } else {  /*___________< 3 INTEGERS________________*/
+                chanBchars[lengthCount] = kpdInput;   // adding the char to the array
+                lengthCount++;
                 break;                    // leave the switch
             }
         case DMX_INTENSITY:
-            if (currentNumCount > 8 ) {
-                intWrap(intensityString, kpdInput, 9);
-                currentNumCount = 9;
+            if (lengthCount > 8 ) {
+                intWrap(intensityChars, kpdInput, 9);
+                lengthCount = 9;
                 break;
-                /*___________>9 INTEGERS__________________________*/
-            } else if (currentNumCount < 9 ) {
-                intensityString[currentNumCount] = kpdInput;
-                currentNumCount++;
+
+            } else if (lengthCount < 9 ) { /*___________>9 INTEGERS______________*/
+                intensityChars[lengthCount] = kpdInput;
+                lengthCount++;
                 break;
             }
-    }
-
-
-    void kpdINTSYinput(char kpdInput) {
-        if ((controlMode == KPDFADER_MODE) && (kpdInput != '0') && (kpdInput != '9')) {
-            currentNumCount = 0;
-            intensityString[currentNumCount] = kpdInput;
-            currentNumCount = 1;
-            break;
-        }
-        /*___________9 INTEGERS__________________________*/
-        else if ((controlMode == KPD_MODE) && (currentNumCount > 8 )) {
-            intWrap(intensityString, kpdInput, 9);
-            currentNumCount = 9;
-            break;
-            /*___________>9 INTEGERS__________________________*/
-        } else if ((controlMode == KPD_MODE) && (currentNumCount < 9 )) {
-            intensityString[currentNumCount] = kpdInput;
-            currentNumCount++;
-            break;
-        }
-    }
 }
 
+// deal with  '@' button logic
 void kpdINTSYinput(char kpdInput) {
-
+    if ((controlMode == KPDFADER_MODE) && (kpdInput != '0') && (kpdInput != '9')) {
+        lengthCount = 0;
+        intensityChars[lengthCount] = kpdInput;
+        lengthCount = 1;
+        break;
+    }
+    /*___________9 INTEGERS__________________________*/
+    else if ((controlMode == KPD_MODE) && (lengthCount > 8 )) {
+        intWrap(intensityChars, kpdInput, 9);
+        lengthCount = 9;
+        break;
+        /*___________>9 INTEGERS__________________________*/
+    } else if ((controlMode == KPD_MODE) && (lengthCount < 9 )) {
+        intensityChars[lengthCount] = kpdInput;
+        lengthCount++;
+        break;
+    }
 }
 
-// number button presses (1,2,3,4,5,6,7,8,9,0)
-void kpdNum(char cmdString[], int currentLength, char kpdInput){
-        switch (kpdState) {
-            //MODE_SELECT______________________________________
-            case MODE_SELECT:
-                if (cmdString == empty){
-                // do nothing and print a warning
-                break;
-                }else(){
-                // add 'input' to the string
-                char c = kpdInput;
-                strncat(cmdString, &c, 1);
-                break;
-                }
+// deal with  modifier ('T', '&', '-', 'S') logic
+void kpdMOD(key){
 
-        }
-}
-
-// modifier button press (&,-,T,S, etc)
-void kpdMOD(char cmdString[], int currentLength, char kpdInput){
-  if (currentLength == 0){
-    // do nothing and print a warning
-    break;
-  }else(){
-    // add 'input' to the string
-    char c = kpdInput;
-    strncat(cmdString, &c, 1);
-    break;
-  }
 }
 
 // deal with a Enter button press
-void kpdENT(char cmdString[], char kpdInput){
+void kpdENTER(char kpdInput) {
 // take the boolen array and apply the
 }
-
-void kpdCmd((bool isAnInteger, char kpdInput, enum ){
-//deal with
-}
-
-
-
-byte dmxVal[512];  // dmx levels for use in TeensyDMX
-byte dmxValBuffer[512];    //place for storing values to transition to
-int channelMap[512] = {0}; //The ability to map channels together to create large submasters
-char intensityString[9];         // intensity string
-bool dmxSelection[512] = { false };//non-destructive DMX kpd channel selection
-int dmxSubMaster[512] = { 0 };//non-destructive DMX kpd channel submaster selection
-char chOneKpdChar[5];           // first string
-char chTwoKpdChar[5];           // second string
-int pgmModeSelectionInt = 0; // used to decide which mode is selected with integers 1-3
-int channelOneInt;                // storage for the array of characters into an integer
-int currentNumCount = 0;      // initializing the integer count at 0
-int channelTwoInt;                // storage for the array of characters into an integer
-float kpdIntensityFloat;      // first intensity channel
