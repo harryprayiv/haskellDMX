@@ -1,15 +1,15 @@
 /*********************************************************************
- Harry Keypad V3
+ Pockonsole Keypad DMX V1.1
  ********************************************************************/
 //#include <Arduino.h> /* Arduino Includes */
-//#include <TeensyDmx.h> /* Teensy DMX Library */
-//#include <Keypad.h> /* Keypad Library */
+#include <TeensyDmx.h> /* Teensy DMX Library */
+#include <Keypad.h> /* Keypad Library */
 
-/*Teensy DMX Settings_________________________________________________*/
+/*Teensy DMX Settings_____________________________*/
 #define DMX_REDE 24
 TeensyDmx Dmx(Serial1, DMX_REDE);
 
-/* keypad constants                  ____________________________________________________*/
+/* keypad constants_______________________________*/
 const byte ROWS = 4; //four rows
 const byte COLS = 4; //three columns
 char keys[ROWS][COLS] = {
@@ -18,42 +18,36 @@ char keys[ROWS][COLS] = {
     {'7', '8', '9', 'S'},
     {'@', '0', 'T', 'E'}
 };
-
 byte rowPins[ROWS] = {9, 8, 7, 6}; //connect to the row pinouts of the keypad
 byte colPins[COLS] = {5, 4, 3, 2}; //connect to the column pinouts of the keypad
-
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+
+
+/*DMX Values____________________________________________*/
+const long analogFaders = 9;            //there will always be the same number of pots (9)
+const int analogFaderMap[analogFaders] = {1, 2, 3, 4, 5, 6, 7, 8, 9}; // this is to allow reconfigurable complex pin assignments
+long dmxChannels = 512;  // intializing the number of values in a DMX instruction
+float scalerVal;  // floating point scaler
+byte dmxVal[512];           // limit to one universe
+byte dmxValBuffer[512];    //place for storing values to transition to
+int displayVal[512] = {0};  /* space for display values*/
+
+int currentNumCount = 0;      // initializing the integer count at 0
+bool dmxSelection[512] = { false };    //enables non-destructive DMX kpd channel selection
+int channelMap[512] = {0};  // map channels to create large submasters
+char chOneKpdChar[5];     // first channel in commmand
+int channelOneInt;   // storage for the array of characters into an integer
+
+char chTwoKpdChar[5];  // second channel in commmand
+int channelTwoInt;  // storage for the array of characters into an integer
+
+char intensityString[9];        // first channel in commmand
+float kpdIntensityFloat;   // first intensity channel
 
 int pgmModeSelectionInt = 0; // used to decide which mode is selected with integers 1-3 for now (more as modes expand)
 
-/*DMX Values__________________________________________________________*/
-const long analogFaders = 9;            //there will always be the same number of pots (9)
-const int analogFaderMap[analogFaders] = {1, 2, 3, 4, 5, 6, 7, 8, 9}; // this is to allow reconfigurable complex pin assignments
-long dmxChannels = 512;           // intializing with a limiting to the number of values that can take up a DMX instruction
 
-byte dmxVal[512];           // currently limiting to one universe, though that won't always be the case
-byte dmxValBuffer[512];    //place for storing values to transition to
-int displayVal[512] = {0};      /* space for display values*/
-
-bool dmxSelection[512] = { false };           //enables non-destructive DMX kpd channel selection using a for loop
-int channelMap[512] = {0};                    //The beginning of being able to map channels together to create large submasters
-
-// floating point scaler
-float scalerVal;
-
-
-char chOneKpdChar[5];           // first channel in commmand
-int channelOneInt;                // storage for the array of characters into an integer
-
-int intCount = 0;      // initializing the integer count at 0
-
-char chTwoKpdChar[5];           // second channel in commmand
-int channelTwoInt;                // storage for the array of characters into an integer
-
-char intensityString[9];           // first channel in commmand
-float kpdIntensityFloat;      // first intensity channel
-
-// __________________________________KEYPAD PROGRESS__________________________
+// ____________________KEYPAD PROGRESS_______________
 enum kpdProgress {
     CMD_EMPTY,
     DMXCH_A,
@@ -62,7 +56,7 @@ enum kpdProgress {
 };
 kpdProgress kpdState = CMD_EMPTY;
 
-// __________________________________PROGRAM MODES___________________________
+// ________________________PROGRAM MODES_______________
 enum pgmMode {
     FADER_MODE,
     KPD_MODE,
@@ -73,7 +67,7 @@ pgmMode controlMode;
 
 bool modeChosen = false; //mode set state
 
-// _________________________________SELECTION MODES__________________________
+// _____________________SELECTION MODES__________________
 enum selectionMode {
     NONE,
     SINGLECHANNEL,
@@ -131,7 +125,7 @@ void loop() {
 
 void kpdToCommand(char key) {
     switch (key) {
-        //______________________________________________________________________________
+        //______________________________________________________
         case 'T':  //  fall through switch for the 'T' (through) key with function trigger
         case '&':  //  fall through switch for the '&' key with function trigger
         case '-':  //  fall through switch for the '-' key with function trigger
@@ -165,69 +159,65 @@ void kpdCHinput(char kpdInput) {
             if (kpdInput == '0') {      //don't count a zero as the first integer in the array
                     break;
                 }
-                chOneKpdChar[intCount] = kpdInput;
-                intCount++;
+                chOneKpdChar[currentNumCount] = kpdInput;
+                currentNumCount++;
                 break;
             }
         case DMXCH_A:
-            if (intCount == 2) {/*___________3 INTEGERS_______________*/
-                chOneKpdChar[intCount - 2] = chOneKpdChar[intCount - 1]; //shifting values to next array position
-                chOneKpdChar[intCount - 1] = chOneKpdChar[intCount];
-                chOneKpdChar[intCount] = kpdInput;   // adding the char to the array
-
+            if (currentNumCount == 2) {/*___________3 INTEGERS_______________*/
+                chOneKpdChar[currentNumCount - 2] = chOneKpdChar[currentNumCount - 1]; //shifting values to next array position
+                chOneKpdChar[currentNumCount - 1] = chOneKpdChar[currentNumCount];
+                chOneKpdChar[currentNumCount] = kpdInput;   // adding the char to the array
                 kpdState = DMXCH_A;    // keep wrapping digits in this controlModeuntil modifier
-                intCount = 2;
+                currentNumCount = 2;
                 break;
-
             } else { /*____________________< 3 INTEGERS________________*/
-                chOneKpdChar[intCount] = kpdInput;   // adding the char to the array
-
+                chOneKpdChar[currentNumCount] = kpdInput;   // adding the char to the array
                 kpdState = DMXCH_A; // stay in this controlModeuntil modifier is pressed
-                intCount++;
+                currentNumCount++;
                 break;    // leave the switch
             }
         case DMXCH_B:
-            if (intCount == 2) { /*___________3 INTEGERS_______________*/
-                chTwoKpdChar[intCount - 2] = chTwoKpdChar[intCount - 1]; chTwoKpdChar[intCount - 1] = chTwoKpdChar[intCount]; //shifting values to next array position
-                chTwoKpdChar[intCount] = kpdInput;   // adding the char to the array
-                intCount = 2;
+            if (currentNumCount == 2) { /*___________3 INTEGERS_______________*/
+                chTwoKpdChar[currentNumCount - 2] = chTwoKpdChar[currentNumCount - 1]; chTwoKpdChar[currentNumCount - 1] = chTwoKpdChar[currentNumCount]; //shifting values to next array position
+                chTwoKpdChar[currentNumCount] = kpdInput;   // adding the char to the array
+                currentNumCount = 2;
                 break;
             } else {  /*____________________< 3 INTEGERS________________*/
-                chTwoKpdChar[intCount] = kpdInput;   // adding the char to the array
-                intCount++;
+                chTwoKpdChar[currentNumCount] = kpdInput;   // adding the char to the array
+                currentNumCount++;
                 break;                    // leave the switch
             }
         case DMX_INTENSITY:
-            if (intCount > 8 ) {
+            if (currentNumCount > 8 ) {
                 intWrap(intensityString, kpdInput, 9);
-                intCount = 9;
+                currentNumCount = 9;
                 break;
                 /*___________>9 INTEGERS__________________________*/
-            } else if (intCount < 9 ) {
-                intensityString[intCount] = kpdInput;
-                intCount++;
+            } else if (currentNumCount < 9 ) {
+                intensityString[currentNumCount] = kpdInput;
+                currentNumCount++;
                 break;
             }
-
     }
 
 
     void kpdINTSYinput(char kpdInput) {
         if ((controlMode == KPDFADER_MODE) && (kpdInput != '0') && (kpdInput != '9')) {
-            intCount = 0;
-            intensityString[intCount] = kpdInput;
-            intCount = 1;
+            currentNumCount = 0;
+            intensityString[currentNumCount] = kpdInput;
+            currentNumCount = 1;
             break;
         }
         /*___________9 INTEGERS__________________________*/
-        else if ((controlMode == KPD_MODE) && (intCount > 8 )) {
+        else if ((controlMode == KPD_MODE) && (currentNumCount > 8 )) {
             intWrap(intensityString, kpdInput, 9);
-            intCount = 9;
+            currentNumCount = 9;
             break;
             /*___________>9 INTEGERS__________________________*/
-        } else if ((controlMode == KPD_MODE) && (intCount < 9 )) {
-            intensityString[intCount] = kpdInput;
-            intCount++;
+        } else if ((controlMode == KPD_MODE) && (currentNumCount < 9 )) {
+            intensityString[currentNumCount] = kpdInput;
+            currentNumCount++;
             break;
         }
     }
@@ -289,6 +279,6 @@ char chOneKpdChar[5];           // first string
 char chTwoKpdChar[5];           // second string
 int pgmModeSelectionInt = 0; // used to decide which mode is selected with integers 1-3
 int channelOneInt;                // storage for the array of characters into an integer
-int intCount = 0;      // initializing the integer count at 0
+int currentNumCount = 0;      // initializing the integer count at 0
 int channelTwoInt;                // storage for the array of characters into an integer
 float kpdIntensityFloat;      // first intensity channel

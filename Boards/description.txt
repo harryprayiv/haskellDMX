@@ -1,1 +1,0 @@
-These are the boards that the code is written to work with.
