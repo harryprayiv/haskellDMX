@@ -26,8 +26,8 @@ const long analogFaders = 9;            //there will always be the same number o
 const int analogFaderMap[analogFaders] = {1, 2, 3, 4, 5, 6, 7, 8, 9}; // this is to allow reconfigurable complex pin assignments
 long dmxChannels = 512;  // intializing the number of values in a DMX instruction
 float scalerVal;  // floating point scaler
-//byte dmxVal[512];           // limit to one universe
-//byte dmxValBuffer[512];    //place for storing values to transition to
+byte dmxVal[512];           // limit to one universe
+byte dmxValBuffer[512];    //place for storing values to transition to
 int displayVal[512] = {0};  /* space for display values*/
 
 int lengthCount = 0;  // initializing the integer count at 0
