@@ -90,10 +90,10 @@ void kpdToCommand(char key) {
             kpdMOD(key);
             break;
         case '@':  //  switch for the '@' key with function trigger
-            kpdINTSYinput(key);
+            kpdINTSYinput();
             break;
         case 'E':  //  fall through switch for the 'E' key with function trigger
-            kpdENTER(key);
+            kpdENTER();
             break;
         case '0': //  fall through switch for the '0' key with function trigger
         case '1': //  fall through switch for the '1' key with function trigger
@@ -159,7 +159,7 @@ void kpdCHinput(char kpdInput) {
 }
 
 // deal with  '@' button logic
-void kpdINTSYinput(char kpdInput) {
+void kpdINTSYinput() {
     if ((controlMode == KPDFADER_MODE) && (kpdInput != '0') && (kpdInput != '9')) {
         lengthCount = 0;
         intensityChars[lengthCount] = kpdInput;
@@ -185,6 +185,58 @@ void kpdMOD(key){
 }
 
 // deal with a Enter button press
-void kpdENTER(char kpdInput) {
+void kpdENTER() {
 // take the boolen array and apply the
+}
+
+void kpdSubIntensity(int chOne, selectionMode selType, int chTwo, float intensity) {
+    switch (selType) {
+            /*_______PARSING 'SINGLECHANNEL'__________*/
+        case SINGLECHANNEL:
+            dmxVal[chOne - 1] = round(floatmap(intensity, 0, .99999999, 0, 255)); // map float percent intensity to integer of 0-255
+            Dmx.setDmxChannel(chOne, dmxVal[chOne - 1]);
+            break;
+            /*_______PARSING 'AND'____________________*/
+        case AND:
+            dmxVal[chOne - 1] = round(floatmap(intensity, 0, .99999999, 0, 255)); // map float percent intensity to integer of 0-255
+            Dmx.setDmxChannel(chOne, dmxVal[chOne - 1]);
+            dmxVal[chTwo - 1] = round(floatmap(intensity, 0, .99999999, 0, 255)); // map float percent intensity to integer of 0-255
+            Dmx.setDmxChannel(chTwo, dmxVal[chTwo - 1]);
+            break;
+            /*_______PARSING 'THROUGH'__________________*/
+        case THROUGH:
+            if (chOne == chTwo) {
+                dmxVal[chOne - 1] = round(floatmap(intensity, 0, .99999999, 0, 255)); // map float percent intensity to integer of 0-255
+                Dmx.setDmxChannel(chOne, dmxVal[chOne - 1]);
+            }
+            if (chOne < chTwo) {
+                for (int i = (chOne - 1); i > (chTwo - chOne); ++i) {       //loop through all channels and assign this intensity
+                    dmxVal[i] = round(floatmap(intensity, 0, .99999999, 0, 255));
+                    Dmx.setDmxChannel((i + 1), dmxVal[i]);
+                }
+                break;
+            } if (chOne > chTwo) {
+                for (int i = (chTwo - 1); i > (chOne - chTwo); ++i) {       //loop through all channels and assign this intensity
+                    dmxVal[i] = round(floatmap(intensity, 0, .99999999, 0, 255));
+                    Dmx.setDmxChannel((i + 1), dmxVal[i]);
+                }
+                break;
+            }
+        case NONE:
+            break;
+    }
+}
+
+/* custom mapping for floats, which come up often in intensity values and division */
+float floatmap(float x, float in_min, float in_max, float out_min, float out_max)  {
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+
+/* function for wrapping integers based on number of desired digits */
+void intWrap(String numToWrap, char inputNum, int spaces) {
+    for (int i = 0; (i = spaces); i++) {
+        numToWrap[i] = numToWrap[(i + 1)];            //shifting values to next array position until we get to the alotted spaces
+    }
+    numToWrap[spaces] = inputNum;   // adding the char to the array
 }

@@ -79,7 +79,7 @@ void keypadLogic(bool isAnInteger, char kpdInput) {
             }
             //___DMXCH_ONE____________________________________
         case DMXCH_ONE:                                                     // First Channel Assignment command
-            if (isAnInteger == false) {                                     // is this an integer?
+            if (isAnInteger == false) { // an integer?
                 /*___________AT__________________________*/
                 if ((kpdInput == '@') && (intCount > 0)) { // if it is '@' and there are more than 0 integers
                     smpleDisplay(" @ ", true, true);
@@ -87,8 +87,8 @@ void keypadLogic(bool isAnInteger, char kpdInput) {
                     if (channelOneInt > 512) {                    //greater than 512?? (one universe)
                         channelOneInt = 512;                      // max out channel number to 512
                     }
-                    selectionType = SINGLECHANNEL;          // classify the command as soon as it is known
-                    kpdState = DMX_INTENSITY;                  // move to the stage where we assign intensity
+                    selectionType = SINGLECHANNEL; // classify the command as soon as it is known
+                    kpdState = DMX_INTENSITY;// move to the stage where we assign intensity
                     intCount = 0;      //zero the int Count
                     break;
                 }
