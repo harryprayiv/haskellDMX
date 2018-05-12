@@ -5,6 +5,8 @@
 #include <TeensyDmx.h> /* Teensy DMX Library */
 #include <Keypad.h> /* Keypad Library */
 
+
+
 /*Teensy DMX Settings_____________________________*/
 #define DMX_REDE 24
 TeensyDmx Dmx(Serial1, DMX_REDE);
@@ -230,7 +232,7 @@ void kpdBoolDMX(bool selection, float intensity) {
             Dmx.setDmxChannel(chOne, dmxVal);
             break;
         }
-        
+
 }
 
 /* floats mapping */
