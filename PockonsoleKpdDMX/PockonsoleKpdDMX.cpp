@@ -92,7 +92,7 @@ void kpdToCommand(char key) {
             kpdMOD(key);
             break;
         case '@':  //  switch for the '@' key with function trigger
-            kpdINTSYinput();
+            kpdASSIGN();
             break;
         case 'E':  //  fall through switch for the 'E' key with function trigger
             kpdENTER();
@@ -106,13 +106,13 @@ void kpdToCommand(char key) {
         case '6': //  fall through switch for the '6' key with function trigger
         case '7': //  fall through switch for the '7' key with function trigger
         case '8': //  fall through switch for the '8' key with function trigger
-        case '9':                       //  mapping for '9' key with function trigger
-            kpdCHinput(key);
+        case '9': //  mapping for '9' key with function trigger
+            kpdNUM(key);
             break;
     }
 }
 
-void kpdCHinput(char kpdInput) {
+void kpdNUM(char kpdInput) {
     switch (kpdState) {
         case CMD_EMPTY:
             if (kpdInput == '0') {      //don't count a zero as the first integer in the array
@@ -161,7 +161,7 @@ void kpdCHinput(char kpdInput) {
 }
 
 // deal with  '@' button logic
-void kpdINTSYinput() {
+void kpdASSIGN() {
     if ((controlMode == KPDFADER_MODE) && (kpdInput != '0') && (kpdInput != '9')) {
         lengthCount = 0;
         intensityChars[lengthCount] = kpdInput;
@@ -188,7 +188,7 @@ void kpdMOD(key){
 
 // deal with a Enter button press
 void kpdENTER() {
-// take the boolen array and apply the
+// take the boolen array and assemble and parse the entire string
 }
 
 void kpdSubIntensity(int chOne, selectionMode selType, int chTwo, float intensity) {
