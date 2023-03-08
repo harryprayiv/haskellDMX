@@ -1,6 +1,6 @@
 <b>Pockonsolve - Version 0.1.0</b>
 
-<i>Expirimental & Professional Grade DMX Microcontroller</i>
+<i>Experimental DMX Microcontroller</i>
 
 LIBRARIES USED:
   - TeensyDmx Library
