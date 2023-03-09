@@ -19,7 +19,7 @@ The case expression handles the different selection modes. For SingleChannel and
 
 Note that in Haskell, the function does not have side effects (such as setting DMX channels), but rather returns a list of pairs that can be used to update the channels in some other way.
 
-''
+```
 import Data.List (foldl')
 
 analogRead :: Int -> Int
@@ -157,7 +157,7 @@ keypadLogic isAnInteger kpdInput = do
             channelOneInt <- pure 512
           selectionType <- pure SINGLECHANNEL
           kpdState <- pure
-''
+```
 
 
 
