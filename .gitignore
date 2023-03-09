@@ -1,1 +1,4 @@
 /result
+/dist-*
+/dist
+.envrc
