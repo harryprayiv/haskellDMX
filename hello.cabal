@@ -21,3 +21,9 @@ executable keypadLogicV2
   main-is: keypadLogicV2.hs
   build-depends: base
 
+executable keypadLogicV3
+  hs-source-dirs: src
+  main-is: keypadLogicV3.hs
+  build-depends: base
+
+
