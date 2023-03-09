@@ -4,7 +4,7 @@
 -- Removed unnecessary let bindings and used guards to simplify the code
 -- Replaced pattern matching on Char values with a lookup table using Data.Map module
 -- Removed unused variables and trailing dots
--- Corrected a couple of syntax errors in the code
+-- Corrected a couple of syntax errors
 {-# LANGUAGE NamedFieldPuns #-}
 
 import Data.List (foldl')
