@@ -4,26 +4,26 @@ cabal-version: 3.6
 --   http://haskell.org/cabal/release/cabal-latest/doc/users-guide/
 
 name: hello
-version: 1.0.0.2
+version: 1.0.0.3
 
 executable hello
   hs-source-dirs: src
   main-is: hello.hs
   build-depends: base
 
-executable keypadLogic
-  hs-source-dirs: src
-  main-is: keypadLogic.hs
-  build-depends: base
+-- executable keypadLogic
+--   hs-source-dirs: src
+--   main-is: keypadLogic.hs
+--   build-depends: base
 
-executable keypadLogicV2
-  hs-source-dirs: src
-  main-is: keypadLogicV2.hs
-  build-depends: base
+-- executable keypadLogicV2
+--   hs-source-dirs: src
+--   main-is: keypadLogicV2.hs
+--   build-depends: base
 
-executable keypadLogicV3
+executable dmxLogic
   hs-source-dirs: src
-  main-is: keypadLogicV3.hs
+  main-is: dmxLogic.hs
   build-depends: base
 
 
