@@ -1,0 +1,11 @@
+
+"in Haskell, create DMX: a custom data type that uses type definitions to make sure that it is always an array with exactly 512 indices containing integers ranging from 0-255"
+
+
+"in Haskell, create DMXSel: a custom data type that uses type definitions to make sure that it is always an array with exactly 512 indices containing boolean values"
+
+
+chatGPT prompts: 
+Create a function called modDmxChVals that takes 'd' (an input that must conform to the previously created DMX data type), 's' (an input that must conform to the previously created DMXSel data type), and 'v': a single integer (between 0 and 255) and outputs a new array of the DMX data type where the new value 'v' replaces only the corresponding indices that were marked 'true' and leave the indices corresponding to 'false' as the same values they were on input. 
+
+
