@@ -26,9 +26,14 @@ executable hello
 --   main-is: dmxLogic.hs
 --   build-depends: base, array
 
-executable dmxLogic2
+-- executable dmxLogic2
+--   hs-source-dirs: src
+--   main-is: dmxLogic2.hs
+--   build-depends: base, array
+
+executable dmxLogic3
   hs-source-dirs: src
-  main-is: dmxLogic2.hs
+  main-is: dmxLogic3.hs
   build-depends: base, array
 
 

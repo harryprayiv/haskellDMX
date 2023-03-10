@@ -3,7 +3,7 @@ module Main (main) where
 
 import Data.Maybe
 import Data.Ix (Ix(..))
-import Data.Array.IArray ((!), IArray(array), bounds, elems, listArray, rangeSize)
+import Data.Array.IArray ((!), IArray, bounds, elems, listArray, rangeSize)
 
 instance Ix Int => Ix (Array Int Int) where
   range (l,u) = [l..u]
@@ -65,6 +65,4 @@ myDMXSel = mkDMXSel $ replicate 512 True
 main :: IO ()
 main = case (myDMX, myDMXSel) of
     (Just dmx, Just dmxSel) ->
-        let modifiedDMX = modDmxChVals dmx dmxSel 42
-        in putStrLn (show modifiedDMX)
-    _ -> putStrLn "Failed to create DMX or DMXSel array"
+        let modifiedDMX = modDmxChVals dmx dmxSel
