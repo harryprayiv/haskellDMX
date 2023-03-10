@@ -24,6 +24,6 @@ executable hello
 executable dmxLogic
   hs-source-dirs: src
   main-is: dmxLogic.hs
-  build-depends: base
+  build-depends: base, array
 
 
