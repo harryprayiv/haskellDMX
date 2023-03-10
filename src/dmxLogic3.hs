@@ -1,32 +1,19 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, FlexibleContexts #-}
+
 module Main (main) where
 
 import Data.Maybe
-import Data.Ix (Ix(..))
-import Data.Array.IArray ((!), IArray, bounds, elems, listArray, rangeSize)
-
-instance Ix Int => Ix (Array Int Int) where
-  range (l,u) = [l..u]
-  index (l,u) i = i - l
-  inRange (l,u) i = i >= l && i <= u
-  -- Replace usage of unsafeIndex
-  unsafeIndex (l,u) i = i - l
-
-instance Ix Int => Ix (Array Int Bool) where
-  range (l,u) = [l..u]
-  index (l,u) i = i - l
-  inRange (l,u) i = i >= l && i <= u
-  -- Replace usage of unsafeIndex
-  unsafeIndex (l,u) i = i - l
+import Data.Ix (Ix(..), bounds)
+import Data.Array (Array, array)
+import Data.Array.IArray (IArray, (!), listArray, rangeSize)
 
 
 -- DMX Data Type Type and Instance
 instance Ix Int => Ix (Array Int Int) where
-  range (l,u) = [l..u]
+  range (l,u) = [array (l,u) [(i,i) | i <- [l..u]]]
   index (l,u) i = i - l
-  inRange (l,u) i = i >= l && i <= u
-  -- Replace usage of unsafeIndex
-  unsafeIndex (l,u) i = i - l
+  inRange (l,u) i = l <= i && i <= u
+  bounds (l,u) = (l, u)
 
 newtype DMX = DMX (Array Int Int) deriving (Eq, Ord, Ix, Read, Show)
 
@@ -37,13 +24,12 @@ mkDMX xs
 
 -- DMX Selection Data Type and Instance
 instance Ix Int => Ix (Array Int Bool) where
-  range (l,u) = [l..u]
-  index (l,u) i = i - l
-  inRange (l,u) i = i >= l && i <= u
-  -- Replace usage of unsafeIndex
-  unsafeIndex (l,u) i = i - l
+  range (l,u) = [array (l,u) [(i,i) | i <- [l..u]]]
+  index (l,u) i = if (l <= i && i <= u) then (u - i) `mod` (u - l + 1) else error "index out of bounds"
+  inRange (l,u) i = l <= i && i <= u
+  bounds (l,u) = (l, u)
 
-newtype DMXSel = DMXSel (Array Int Bool) deriving (Eq, Ord, Read, Show)
+newtype DMXSel = DMXSel (Array Int Bool) deriving (Eq, Ord, Ix, Read, Show)
 
 mkDMXSel :: [Bool] -> Maybe DMXSel
 mkDMXSel xs
@@ -62,7 +48,15 @@ myDMX = mkDMX [0..511]
 myDMXSel :: Maybe DMXSel
 myDMXSel = mkDMXSel $ replicate 512 True
 
+-- main :: IO ()
+-- main = case (myDMX, myDMXSel) of
+--     (Just dmx, Just dmxSel) ->
+--         let modifiedDM
+
+
 main :: IO ()
 main = case (myDMX, myDMXSel) of
     (Just dmx, Just dmxSel) ->
-        let modifiedDMX = modDmxChVals dmx dmxSel
+        let modifiedDMX = modDmxChVals dmx dmxSel 42
+        in putStrLn (show modifiedDMX)
+    _ -> putStrLn "Failed to create DMX or DMXSel array"
