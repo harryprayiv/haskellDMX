@@ -21,9 +21,14 @@ executable hello
 --   main-is: keypadLogicV2.hs
 --   build-depends: base
 
-executable dmxLogic
+-- executable dmxLogic
+--   hs-source-dirs: src
+--   main-is: dmxLogic.hs
+--   build-depends: base, array
+
+executable dmxLogic2
   hs-source-dirs: src
-  main-is: dmxLogic.hs
+  main-is: dmxLogic2.hs
   build-depends: base, array
 
 
