@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances, FlexibleContexts #-}
+
 module Main (main) where
 
 import Data.Array

@@ -16,24 +16,9 @@ executable hello
 --   main-is: keypadLogic.hs
 --   build-depends: base
 
--- executable keypadLogicV2
---   hs-source-dirs: src
---   main-is: keypadLogicV2.hs
---   build-depends: base
-
--- executable dmxLogic
---   hs-source-dirs: src
---   main-is: dmxLogic.hs
---   build-depends: base, array
-
--- executable dmxLogic2
---   hs-source-dirs: src
---   main-is: dmxLogic2.hs
---   build-depends: base, array
-
-executable dmxLogic3
+executable dmx
   hs-source-dirs: src
-  main-is: dmxLogic3.hs
+  main-is: dmx.hs
   build-depends: base, array
 
 
