@@ -9,8 +9,8 @@ module DmxUniverse (
     randomDmxUniverseBool,
     newDmxUniverse,
     setDmxChVals,
-    mathOps,
-    mapDmxUniverses
+    -- mathOps,
+    -- mapDmxUniverses
 ) where
 
 import System.Random

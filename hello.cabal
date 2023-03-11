@@ -14,6 +14,6 @@ executable hello
 executable main
   hs-source-dirs: src/dmx
   main-is: main.hs
-  build-depends: base, array, random
+  build-depends: base, random
 
 
