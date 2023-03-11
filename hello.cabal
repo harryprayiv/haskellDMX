@@ -11,14 +11,9 @@ executable hello
   main-is: hello.hs
   build-depends: base
 
--- executable keypadLogic
---   hs-source-dirs: src
---   main-is: keypadLogic.hs
---   build-depends: base
-
-executable dmx
-  hs-source-dirs: src
-  main-is: dmx.hs
-  build-depends: base, array
+executable main
+  hs-source-dirs: src/dmx
+  main-is: main.hs
+  build-depends: base, array, random
 
 
