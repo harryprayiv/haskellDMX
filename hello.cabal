@@ -16,4 +16,10 @@ executable main
   main-is: main.hs
   build-depends: base, random
 
+executable string_parser
+  hs-source-dirs: src/dmx
+  main-is: string_parser.hs
+  build-depends: base, random, regex-posix
+
+
 
