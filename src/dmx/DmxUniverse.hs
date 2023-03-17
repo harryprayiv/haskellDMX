@@ -96,16 +96,26 @@ parseValue (x:_) | all isDigit x = read x
 parseValue _ = error "Invalid value specifier"
 
 stringToUniverse :: String -> DmxUniverse
-stringToUniverse s = case words s of
-    [startStr, "to", endStr, "at", lvlStr] | [(start, "")] <- reads startStr, [(end, "")] <- reads endStr, start <= dmxUniverseSize, end <= dmxUniverseSize ->
-        let chSel = [i >= start && i <= end | i <- [1 .. dmxUniverseSize]]
-            level = parseLevel lvlStr
-        in setDmxChVals emptyDmxUniverse (DmxUniverseBool chSel) level
-    [startStr, "to", endStr, "@", lvlStr] | [(start, "")] <- reads startStr, [(end, "")] <- reads endStr, start <= dmxUniverseSize, end <= dmxUniverseSize ->
-        let chSel = [i >= start && i <= end | i <- [1 .. dmxUniverseSize]]
-            level = parseLevel lvlStr
-        in setDmxChVals emptyDmxUniverse (DmxUniverseBool chSel) level
-    _ -> error $ "Invalid command: " ++ s
+stringToUniverse s =
+  let tokens = words s
+      (chStart, chEnd) =
+        case tokens of
+          [startStr, "to"     , endStr, "at"     , lvlStr] -> parseRange startStr endStr
+          [startStr, "through", endStr, "at"     , lvlStr] -> parseRange startStr endStr
+          [startStr, "and"    , endStr, "at"     , lvlStr] -> parseRange startStr endStr
+          [startStr, "to"     , endStr, "@"      , lvlStr] -> parseRange startStr endStr
+          [startStr, "through", endStr, "@"      , lvlStr] -> parseRange startStr endStr
+          [startStr, "and"    , endStr, "@"      , lvlStr] -> parseRange startStr endStr
+          _ -> error $ "Invalid command: " ++ s
+      parseRange startStr endStr =
+        let [(start, "")] = reads startStr
+            [(end, "")] = reads endStr
+        in (min start end, max start end)
+      level = parseLevel $ last tokens
+      selectedChannels = [1 .. chEnd] ++ replicate (dmxUniverseSize - chEnd) 0
+      updatedChannels =
+        map (\ch -> if ch >= chStart && ch <= chEnd then level else 0) selectedChannels
+  in DmxUniverse updatedChannels
 
 testStringToUniverse :: IO ()
 testStringToUniverse = do
