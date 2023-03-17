@@ -3,7 +3,6 @@ module Main where
 import System.Random
 import Data.Word
 import DmxUniverse 
-import DmxUniverseBuilders 
 
 
 main :: IO ()
@@ -43,3 +42,7 @@ main = do
   let
     modifiedUniverse = modifyDmxChVals universeA randomSelection 2 '*'
   putStrLn $ "A * 20 if selected: " ++ show (unDmxUniverse modifiedUniverse) 
+  let testInput = "41 to 376 at 10%"
+  let actualOutput = (stringToUniverse testInput)
+  putStrLn $ "Does my command work?" ++ show (unDmxUniverse actualOutput) 
+
