@@ -43,7 +43,4 @@ main = do
     modifiedUniverse = modifyDmxChVals universeA randomSelection 2 '*'
   putStrLn $ "A * 20 if selected: " ++ show (unDmxUniverse modifiedUniverse) 
   putStrLn "\n\n\n"
-  let testInput = "376 to 56 at 15%"
-  let actualOutput = (stringToUniverse testInput)
-  putStrLn $ "Does my command work?" ++ show (unDmxUniverse actualOutput) 
-
+  testStringToUniverse

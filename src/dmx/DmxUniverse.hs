@@ -24,6 +24,16 @@ newtype DmxUniverse = DmxUniverse { unDmxUniverse :: [Word8] }
 
 
 newtype DmxUniverseBool = DmxUniverseBool { unDmxUniverseBool :: [Bool] }
+instance Show DmxUniverseBool where
+  show (DmxUniverseBool bools) =
+    let channelNumbers = unwords $ map (\(i, b) -> if not b then show i else "") $ zip [1..] bools
+    in "Mismatched channel #'s:" ++ channelNumbers ++ "\nDmxUniverseBool: " ++ show bools
+-- instance Show DmxUniverseBool where
+--   show (DmxUniverseBool bools) =
+--     let channelNumbers = unwords $ map (\(i, b) -> if not b then show i else "") $ zip [1..] bools
+--         boolsStr = unwords $ map (\b -> if b then " " else "F") bools
+--     in "Mismatched channels: " ++ channelNumbers ++ "\nDmxUniverseBool: " ++ boolsStr
+
 
 dmxUniverseSize :: Int
 dmxUniverseSize = 512
@@ -95,36 +105,52 @@ parseValue ["full"] = 255
 parseValue (x:_) | all isDigit x = read x
 parseValue _ = error "Invalid value specifier"
 
-stringToUniverse :: String -> DmxUniverse
-stringToUniverse s =
+stringToUniverse :: String -> Maybe DmxUniverse -> DmxUniverse
+stringToUniverse s mUniverse =
   let tokens = words s
-      (chStart, chEnd) =
-        case tokens of
-          [startStr, "to"     , endStr, "at"     , lvlStr] -> parseRange startStr endStr
-          [startStr, "through", endStr, "at"     , lvlStr] -> parseRange startStr endStr
-          [startStr, "and"    , endStr, "at"     , lvlStr] -> parseRange startStr endStr
-          [startStr, "to"     , endStr, "@"      , lvlStr] -> parseRange startStr endStr
-          [startStr, "through", endStr, "@"      , lvlStr] -> parseRange startStr endStr
-          [startStr, "and"    , endStr, "@"      , lvlStr] -> parseRange startStr endStr
-          _ -> error $ "Invalid command: " ++ s
-      parseRange startStr endStr =
-        let [(start, "")] = reads startStr
-            [(end, "")] = reads endStr
-        in (min start end, max start end)
+      chTokens = takeWhile (/= "at") tokens
+      chRanges = parseChannelRanges chTokens
       level = parseLevel $ last tokens
-      selectedChannels = [1 .. chEnd] ++ replicate (dmxUniverseSize - chEnd) 0
-      updatedChannels =
-        map (\ch -> if ch >= chStart && ch <= chEnd then level else 0) selectedChannels
+      initialUniverse = maybe (DmxUniverse (replicate dmxUniverseSize 0)) id mUniverse
+      updatedChannels = zipWith updateChannel [1 ..] (unDmxUniverse initialUniverse)
+      updateChannel ch currentLevel = if ch `elem` chRanges then level else currentLevel
   in DmxUniverse updatedChannels
 
 testStringToUniverse :: IO ()
 testStringToUniverse = do
-    let testInput = "6 to 36 at full"
-    let expectedOutput = DmxUniverse $ replicate 6 0 ++ replicate 36 255 ++ replicate (dmxUniverseSize - (36 + 6)) 0
-    let actualOutput = stringToUniverse testInput
-    if actualOutput == expectedOutput
-        then putStrLn "stringToUniverse test passed."
-        else putStrLn $ "stringToUniverse test failed: expected " ++ show expectedOutput ++ " but got " ++ show actualOutput
+  let testCases = [ ( "7 to 323 at 10%"
+                    , Just emptyDmxUniverse
+                    , DmxUniverse $ replicate 6 0 ++ replicate 318 26 ++ replicate (dmxUniverseSize - (6 + 318)) 0
+                    , "Passing Case"
+                    )
+                  , ( "8 to 386 at 10%"
+                    , Just emptyDmxUniverse
+                    , DmxUniverse $ replicate 6 0 ++ replicate 380 26 ++ replicate (dmxUniverseSize - (6 + 380)) 0
+                    , "Failing Case"
+                    )
+                  ]
+
+  let runTestCase (input, initialUniverse, expectedOutput, description) = do
+        putStrLn $ "Running test: " ++ description
+        let actualOutput = stringToUniverse input (initialUniverse)
+        if actualOutput == expectedOutput
+          then putStrLn "Test passed."
+          else do
+            putStrLn "Test failed:"
+            putStrLn $ "Expected: " ++ show expectedOutput
+            putStrLn $ "Actual: " ++ show actualOutput
+            let comparison = zip (unDmxUniverse actualOutput) (unDmxUniverse expectedOutput)
+            let dmxUniverseBool = [actual == expected | (actual, expected) <- comparison]
+            let mismatchedChannels = [i | (i, isEqual) <- zip [1..] dmxUniverseBool, not isEqual]
+            putStrLn $ "Mismatched channels: " ++ show mismatchedChannels
+            putStrLn $ "DmxUniverseBool: " ++ show dmxUniverseBool
+
+  mapM_ runTestCase testCases
+
+
+compareUniverses :: DmxUniverse -> DmxUniverse -> DmxUniverseBool
+compareUniverses (DmxUniverse expected) (DmxUniverse actual) =
+  DmxUniverseBool $ zipWith (==) expected actual
 
 
 modifyDmxChVals :: DmxUniverse -> DmxUniverseBool -> Word8 -> Char -> DmxUniverse
